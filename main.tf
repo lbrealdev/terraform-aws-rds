@@ -1,3 +1,12 @@
+provider "aws" {
+  region = "eu-central-1"
+  default_tags {
+    tags = {
+      test = "rds upgrade/rollback plan"
+    }
+  }
+}
+
 module "rds_settings" {
   source = "./modules/rds_settings"
 
@@ -13,23 +22,23 @@ module "rds_settings" {
   option_group_description = each.value.option_group.description
 }
 
-# module "rds_instance" {
-#   source = "./modules/rds_instance"
-#
-#   identifier     = ""
-#   instance_class = "db.t3.medium"
-#
-#   engine         = module.rds_settings["v15"].engine_name
-#   engine_version = local.rds_engine_version
-#
-#   option_group_name    = module.rds_settings["v15"].option_group_name
-#   parameter_group_name = module.rds_settings["v15"].parameter_group_name
-#   db_subnet_group_name = data.aws_db_subnet_group.subnet_group.name
-#
-#   apply_immediately           = true
-#   allow_major_version_upgrade = true
-#   auto_minor_version_upgrade  = true
-#
-#   password = "testnet"
-#   username = "testnet54321"
-# }
+module "rds_instance" {
+  source = "./modules/rds_instance"
+
+  identifier     = format("rds-%s-db-instance-test", local.prefix_name)
+  instance_class = "db.t3.medium"
+
+  engine         = module.rds_settings["v15"].engine_name
+  engine_version = local.rds_engine_version
+
+  option_group_name    = module.rds_settings["v15"].option_group_name
+  parameter_group_name = module.rds_settings["v15"].parameter_group_name
+  db_subnet_group_name = ""
+
+  apply_immediately           = true
+  allow_major_version_upgrade = true
+  auto_minor_version_upgrade  = true
+
+  password = "testnet"
+  username = "testnet54321"
+}
