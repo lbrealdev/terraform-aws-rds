@@ -103,7 +103,7 @@ module "rds_instance" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `allocated_storage` | The allocated storage in gigabytes | `number` | `20` |
+| `allocated_storage` | The allocated storage in gigabytes | `number` | `100` |
 | `storage_type` | Storage type: 'standard', 'gp2', or 'io1' | `string` | `"gp2"` |
 | `skip_final_snapshot` | Skip final snapshot before deletion | `bool` | `true` |
 | `vpc_security_group_ids` | List of VPC security groups to associate | `list(string)` | `[]` |

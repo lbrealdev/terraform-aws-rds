@@ -18,10 +18,11 @@ db_auto_minor_version_upgrade  = true
 db_skip_final_snapshot         = false
 
 # Rollback Configuration
-rollback_enabled              = false
-rollback_snapshot_identifier  = "rds:mydb-2024-03-18-14-30"
-rollback_stop_source_instance = true
-rollback_identifier           = "mydb-rollback"
-rollback_instance_class       = "db.t3.medium"
-rollback_skip_final_snapshot  = false
-rollback_apply_immediately    = true
+rollback_enabled                   = false
+rollback_snapshot_identifier       = "rds:mydb-2024-03-18-14-30"
+rollback_stop_source_instance      = true
+rollback_identifier                = "mydb-rollback"
+rollback_instance_class            = "db.t3.medium"
+rollback_skip_final_snapshot       = false
+rollback_final_snapshot_identifier = "mydb-rollback-final-snapshot"
+rollback_apply_immediately         = true

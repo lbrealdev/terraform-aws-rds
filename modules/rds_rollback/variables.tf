@@ -59,21 +59,27 @@ variable "password" {
 }
 
 variable "allocated_storage" {
-  description = "The allocated storage in gigabytes"
+  description = "The allocated storage in gigabytes - not required when using snapshot_identifier (inherited from snapshot)"
   type        = number
-  default     = 20
+  default     = null
 }
 
 variable "storage_type" {
-  description = "One of 'standard' (magnetic), 'gp2' (general purpose SSD), or 'io1' (provisioned IOPS SSD)"
+  description = "Storage type - not required when using snapshot_identifier (inherited from snapshot)"
   type        = string
-  default     = "gp2"
+  default     = null
 }
 
 variable "skip_final_snapshot" {
   description = "Determines whether a final DB snapshot is created before the DB instance is deleted"
   type        = bool
   default     = true
+}
+
+variable "final_snapshot_identifier" {
+  description = "The name of your final DB snapshot when this DB instance is deleted. Must be provided if skip_final_snapshot is false"
+  type        = string
+  default     = null
 }
 
 variable "option_group_name" {

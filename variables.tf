@@ -111,6 +111,12 @@ variable "rollback_skip_final_snapshot" {
   default     = false
 }
 
+variable "rollback_final_snapshot_identifier" {
+  description = "The name of your final DB snapshot when rollback instance is deleted. Required if rollback_skip_final_snapshot is false"
+  type        = string
+  default     = null
+}
+
 variable "rollback_apply_immediately" {
   description = "Apply changes immediately for rollback instance"
   type        = bool

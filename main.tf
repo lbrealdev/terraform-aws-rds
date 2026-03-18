@@ -74,8 +74,9 @@ module "rds_rollback" {
   parameter_group_name = module.rds_settings["v15"].parameter_group_name
   option_group_name    = module.rds_settings["v15"].option_group_name
 
-  skip_final_snapshot = var.rollback_skip_final_snapshot
-  apply_immediately   = var.rollback_apply_immediately
+  skip_final_snapshot       = var.rollback_skip_final_snapshot
+  final_snapshot_identifier = var.rollback_final_snapshot_identifier
+  apply_immediately         = var.rollback_apply_immediately
 
   tags = {
     Purpose = "rollback"
