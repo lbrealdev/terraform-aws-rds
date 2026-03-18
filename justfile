@@ -1,12 +1,9 @@
-# Modules
-
-mod tf 'terraform/tf.just'
-
 set dotenv-load := true
 
 # Alias
 
 alias t := mise-tools
+alias sts := aws-check
 
 # Check current AWS identity
 @aws-check:
@@ -19,45 +16,45 @@ alias t := mise-tools
 # Terraform recipes
 
 # Initialize terraform (download providers, modules, and initialize backend)
-@init:
+@tf-init:
     terraform init
 
 # Create a plan and save it to a file
 # Usage: just plan "-var-file=tfvars/dev.tfvars"
-@plan *var:
+@tf-plan *var:
     terraform plan -out plan {{ var }}
 
 # Apply the saved plan
-@apply:
+@tf-apply:
     terraform apply plan
 
 # Create a destroy plan and apply it
 # Usage: just destroy "-var-file=tfvars/dev.tfvars"
-@destroy *var:
+@tf-destroy *var:
     terraform plan -destroy -out destroy {{ var }}
     terraform apply destroy
 
 # Format terraform files (write changes in place)
-@lint:
+@tf-lint:
     terraform fmt -write=true -recursive
 
 # Validate terraform configuration
-@validate:
+@tf-check:
     terraform validate
 
 # Generate/update terraform documentation
-@docs:
+@tf-docs:
     terraform-docs markdown table --output-file=README.md --output-mode=replace .
 
 # terraform recipes for manages state
 
 # Show terraform state
-@show:
+@tf-show:
     terraform show
 
 # List terraform state resources
-@list:
+@tf-list:
     terraform state list
 
-@refresh:
+@tf-refresh:
     terraform refresh
