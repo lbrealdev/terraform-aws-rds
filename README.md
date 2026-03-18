@@ -12,7 +12,7 @@ This RDS stack is designed for production environments where:
 
 ## Architecture
 
-The stack consists of three complementary modules:
+The stack consists of four complementary modules:
 
 ### [RDS Settings Module](./modules/rds_settings/README.md)
 Manages RDS configuration groups across multiple database versions using `for_each` for stable resource management.
@@ -37,6 +37,14 @@ Fetches existing AWS networking resources with a toggle switch for conditional l
 - **Conditional Enable/Disable**: Toggle switch to control data source execution
 - **Flexible Networking**: Use existing or create new networking resources
 - **Zero-Cost Operation**: Data sources are free to query
+
+### [RDS Rollback Module](./modules/rds_rollback/README.md)
+Creates RDS instances from snapshots for rollback scenarios after failed upgrades.
+
+- **Snapshot-Based Recovery**: Restore from specific point-in-time snapshots
+- **Same Configuration**: Uses same interface as rds_instance module
+- **Toggle Control**: Enable/disable rollback instance creation
+- **Safe Rollback**: Creates new instance while preserving failed one for analysis
 
 ## Quick Start
 
@@ -93,13 +101,92 @@ terraform-aws-rds/
 │   │   ├── variables.tf
 │   │   ├── locals.tf
 │   │   └── outputs.tf
-│   └── rds_networking_data/    # Fetch existing networking resources
+│   ├── rds_networking_data/    # Fetch existing networking resources
+│   │   ├── README.md
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── rds_rollback/           # Create instances from snapshots
 │       ├── README.md
 │       ├── main.tf
 │       ├── variables.tf
 │       └── outputs.tf
 ├── README.md                   # This file
+├── variables.tf                # Root module variables
+├── terraform.tfvars            # Variable values (environment-specific)
+├── terraform.tfvars.example    # Variable template
 └── .gitignore
+```
+
+## Configuration Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    TERRAFORM CONFIGURATION FLOW                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. VARIABLES DEFINITION (variables.tf)                                  │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  Define all configurable parameters with:                        │   │
+│  │  • Type constraints (string, bool, list, etc.)                   │   │
+│  │  • Descriptions                                                  │   │
+│  │  • Default values (optional)                                     │   │
+│  │                                                                  │   │
+│  │  Example:                                                        │   │
+│  │  variable "db_instance_class" {                                  │   │
+│  │    type    = string                                              │   │
+│  │    default = "db.t3.medium"                                      │   │
+│  │  }                                                               │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                           │
+│                              ▼                                           │
+│  2. VARIABLE VALUES (terraform.tfvars)                                   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  Override defaults with environment-specific values:             │   │
+│  │                                                                  │   │
+│  │  db_instance_class = "db.t3.large"                             │   │
+│  │  db_username       = "admin"                                   │   │
+│  │  aws_region        = "eu-central-1"                            │   │
+│  │                                                                  │   │
+│  │  ⚠️  NEVER commit secrets:                                     │   │
+│  │  • Add terraform.tfvars to .gitignore                          │   │
+│  │  • Use environment variables for sensitive data                │   │
+│  │  • Or use AWS Secrets Manager / Parameter Store                │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                           │
+│                              ▼                                           │
+│  3. USAGE IN MAIN.TF                                                     │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  Reference variables in resources/modules:                       │   │
+│  │                                                                  │   │
+│  │  module "rds_instance" {                                         │   │
+│  │    source        = "./modules/rds_instance"                      │   │
+│  │    instance_class = var.db_instance_class                        │   │
+│  │    username      = var.db_username                               │   │
+│  │  }                                                               │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                           │
+│                              ▼                                           │
+│  4. DEPLOYMENT                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  # Use values from terraform.tfvars                              │   │
+│  │  terraform apply                                                 │   │
+│  │                                                                  │   │
+│  │  # Override specific values                                      │   │
+│  │  terraform apply -var="db_instance_class=db.r5.xlarge"         │   │
+│  │                                                                  │   │
+│  │  # Use different environment file                                │   │
+│  │  terraform apply -var-file="prod.tfvars"                       │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  VARIABLE PRECEDENCE (highest to lowest):                                │
+│  1. CLI flags: -var or -var-file                                         │
+│  2. *.auto.tfvars files                                                  │
+│  3. terraform.tfvars                                                     │
+│  4. Environment variables: TF_VAR_name                                   │
+│  5. Default values in variables.tf                                       │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Modules
@@ -109,6 +196,46 @@ terraform-aws-rds/
 | **rds_instance** | Creates RDS DB instances with full configuration | [View Docs](./modules/rds_instance/README.md) |
 | **rds_settings** | Manages parameter and option groups for upgrades | [View Docs](./modules/rds_settings/README.md) |
 | **rds_networking_data** | Fetches existing subnet groups and security groups | [View Docs](./modules/rds_networking_data/README.md) |
+| **rds_rollback** | Creates instances from snapshots for rollback | [View Docs](./modules/rds_rollback/README.md) |
+
+## Engine Version Management
+
+Understanding RDS engine versioning is crucial for predictable deployments:
+
+### Partial vs. Full Version Strings
+
+RDS accepts two formats for engine versions:
+
+**Partial Version (e.g., "15.00"):**
+- AWS automatically selects the latest available patch version
+- Example: `15.00` → `15.00.4455.2.v1` (latest at deployment time)
+- **Risk**: Your database may upgrade to a newer patch version unexpectedly on redeployment
+
+**Full Version (e.g., "15.00.4198.2.v1"):**
+- Pin to an exact, specific version
+- Example: `15.00.4198.2.v1` stays locked to that patch
+- **Benefit**: Immutable, repeatable deployments with no surprise updates
+
+### Best Practices
+
+1. **Pin Full Versions for Production**
+   ```hcl
+   rds_engine_version = "15.00.4198.2.v1"  # Exact, immutable
+   ```
+
+2. **Use Partial Versions for Development**
+   ```hcl
+   rds_engine_version = "15.00"  # Always latest patch
+   ```
+
+3. **Check Available Versions**
+   ```bash
+   aws rds describe-db-engine-versions \
+     --engine sqlserver-web \
+     --query 'DBEngineVersions[].EngineVersion'
+   ```
+
+This approach ensures your infrastructure remains stable and predictable across deployments.
 
 ## Upgrade & Rollback Strategy
 
@@ -146,6 +273,16 @@ terraform-aws-rds/
 - **Retain snapshots** by setting `skip_final_snapshot = false`
 - **Parallel instances** allow quick DNS switchback
 - **Stable keys** prevent accidental recreation of existing resources
+
+### Snapshot Rollback Strategy
+
+For detailed rollback procedures using the `rds_rollback` module, see [ROLLBACK_STRATEGY.md](./ROLLBACK_STRATEGY.md).
+
+This covers:
+- Automated backup integration (daily/monthly snapshots)
+- Step-by-step rollback procedures
+- When to use snapshot vs Blue/Green strategies
+- Cost and downtime considerations
 
 ## Requirements
 

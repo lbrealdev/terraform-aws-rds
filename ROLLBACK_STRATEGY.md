@@ -9,100 +9,58 @@ The snapshot rollback strategy provides a simple, cost-effective way to revert t
 ## Architecture Flow
 
 ```
-PHASE 1: PRE-UPGRADE (Safety Net Creation)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    SNAPSHOT ROLLBACK FLOW                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  BEFORE UPGRADE                                                          │
+│  ┌─────────────┐        Create           ┌─────────────┐                │
+│  │   v15.xx    │ ───────────────────────►│   Snapshot  │                │
+│  │  (Active)   │        (Automated       │  (Daily/    │                │
+│  └─────────────┘         Backup)         │   Monthly)  │                │
+│                                          └──────┬──────┘                │
+│                                                 │                        │
+│  UPGRADE                                        ▼                        │
+│  ┌─────────────┐        Modify           ┌─────────────┐                │
+│  │   v15.xx    │ ───────────────────────►│   v16.xx    │                │
+│  │  (Snapshot) │     15.00 → 16.00       │   (Issues)  │                │
+│  └─────────────┘                         └──────┬──────┘                │
+│                                                 │                        │
+│  ROLLBACK                                       ▼                        │
+│  ┌─────────────┐        Stop             ┌─────────────┐                │
+│  │   v16.xx    │ ◄───────────────────────│   STOPPED   │                │
+│  │  (Stopped)  │      (Preserve for      │  (Failed)   │                │
+│  │             │       Debugging)        └──────┬──────┘                │
+│  └──────┬──────┘                                │                        │
+│         │                                       │                        │
+│         │         Restore                       │                        │
+│         │         from Snapshot                 │                        │
+│         ▼                                       │                        │
+│  ┌─────────────┐                                │                        │
+│  │   v15.xx    │◄───────────────────────────────┘                        │
+│  │  (Restored) │         Data: Point-in-time of snapshot                 │
+│  │  (Active)   │         New endpoint/ARN                                  │
+│  └─────────────┘                                                         │
+│                                                                          │
+│  ⚠️  DATA LOSS: Changes after snapshot timestamp are lost               │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Timeline Example:
 ═══════════════════════════════════════════════════════════════════════════
 
-    ┌──────────────────────────────────────────────────────────────┐
-    │                    CURRENT STATE                              │
-    │  ┌─────────────┐                                            │
-    │  │   v15.xx    │  ◄── Production Database (Active)          │
-    │  │   (Blue)    │      Engine: sqlserver-web-15.00           │
-    │  │             │      Status: available                     │
-    │  └──────┬──────┘                                            │
-    │         │                                                   │
-    │         │  1. Create Manual Snapshot                        │
-    │         │     (aws_db_snapshot resource)                    │
-    │         ▼                                                   │
-    │  ┌────────────────────────────────────────────────────┐    │
-    │  │  Snapshot: "mydb-pre-upgrade-20240318-143022"      │    │
-    │  │  ├─ Engine Version: 15.00.4198.2.v1               │    │
-    │  │  ├─ Created: 2024-03-18 14:30:22                  │    │
-    │  │  ├─ Status: available                             │    │
-    │  │  └─ Retention: 7 days (configurable)              │    │
-    │  └────────────────────────────────────────────────────┘    │
-    └──────────────────────────────────────────────────────────────┘
+Day 1:    02:00  Automated snapshot created (v15.xx)
+          14:00  Upgrade started: v15.xx → v16.xx
+          14:30  v16.xx running, testing begins
+          15:00  ⚠️  Issues detected!
 
-PHASE 2: UPGRADE EXECUTION
-═══════════════════════════════════════════════════════════════════════════
+Day 1:    15:30  Rollback initiated
+          15:35  v16.xx stopped (preserved)
+          16:00  v15.xx restored from snapshot (02:00)
+          16:05  DNS updated, application online
 
-    ┌──────────────────────────────────────────────────────────────┐
-    │ 2. Upgrade Database Engine                                    │
-    │    ┌─────────────┐        Modify        ┌─────────────┐      │
-    │    │   v15.xx    │  ─────────────────►  │   v16.xx    │      │
-    │    │  (Snapshot) │    Engine Version    │   (Green)   │      │
-    │    │             │    15.00 → 16.00     │             │      │
-    │    └─────────────┘                      └──────┬──────┘      │
-    │                                               │              │
-    │                                               │ Testing      │
-    │                                               ▼              │
-    │                                          ┌─────────┐        │
-    │                                          │  Issues │        │
-    │                                          │ Detected│        │
-    │                                          └────┬────┘        │
-    └───────────────────────────────────────────────┼──────────────┘
-                                                    │
-                                                    ▼
-PHASE 3: ROLLBACK (When Issues Detected)
-═══════════════════════════════════════════════════════════════════════════
-
-    ┌──────────────────────────────────────────────────────────────────┐
-    │ 3. Execute Rollback Procedure                                     │
-    │                                                                   │
-    │  Step 3a: TERMINATE FAILED INSTANCE                               │
-    │  ┌──────────────────────────────────────────────────────────┐    │
-    │  │  aws_db_instance.rds (v16.xx)                            │    │
-    │  │  ├─ Status: deleting                                     │    │
-    │  │  └─ Final Snapshot: Optional (skip_final_snapshot=true) │    │
-    │  └──────────────────────────────────────────────────────────┘    │
-    │                              │                                    │
-    │                              ▼                                    │
-    │  Step 3b: RESTORE FROM SNAPSHOT                                   │
-    │  ┌──────────────────────────────────────────────────────────┐    │
-    │  │  Snapshot: "mydb-pre-upgrade-20240318-143022"            │    │
-    │  │         │                                                │    │
-    │  │         │  aws_db_instance.from_snapshot                 │    │
-    │  │         ▼                                                │    │
-    │  │  ┌─────────────┐                                         │    │
-    │  │  │   v15.xx    │  ◄── New Instance                       │    │
-    │  │  │  (Restored) │      Status: restoring → available      │    │
-    │  │  │             │      Same endpoint as original          │    │
-    │  │  └─────────────┘                                         │    │
-    │  └──────────────────────────────────────────────────────────┘    │
-    │                                                                   │
-    │  Step 3c: UPDATE DNS/CONNECTIONS                                  │
-    │  ┌──────────────────────────────────────────────────────────┐    │
-    │  │  Route 53 / Application Config                           │    │
-    │  │  └─ Point to restored instance endpoint                  │    │
-    │  └──────────────────────────────────────────────────────────┘    │
-    └──────────────────────────────────────────────────────────────────┘
-
-PHASE 4: POST-ROLLBACK (Validation)
-═══════════════════════════════════════════════════════════════════════════
-
-    ┌──────────────────────────────────────────────────────────────┐
-    │                    ROLLBACK COMPLETE                          │
-    │  ┌─────────────┐                                            │
-    │  │   v15.xx    │  ◄── Production Database (Restored)        │
-    │  │  (Restored) │      Data: Point-in-time of snapshot       │
-    │  │             │      Status: available                     │
-    │  └─────────────┘                                            │
-    │                                                               │
-    │  ⚠️  IMPORTANT NOTES:                                         │
-    │  • Data changes since snapshot are LOST                      │
-    │  • New instance has different ARN/Resource ID                │
-    │  • Automated backups start fresh                             │
-    │  • Monitoring/dashboards may need updates                    │
-    └──────────────────────────────────────────────────────────────┘
+Result:   Data loss: 02:00-15:00 (13 hours)
+          Downtime: ~30 minutes (restore + DNS propagation)
 ```
 
 ## Terraform Implementation
