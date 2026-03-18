@@ -135,6 +135,7 @@ module "rds_instance" {
 - **Final Snapshots:** By default, `skip_final_snapshot` is set to `true` for easier deletion during development. Set to `false` for production to prevent data loss.
 - **Apply Immediately:** Changes are deferred to the maintenance window by default. Set `apply_immediately = true` for immediate changes (may cause brief downtime).
 - **Version Upgrades:** Use `allow_major_version_upgrade` and `auto_minor_version_upgrade` to control upgrade behavior.
+- **Engine Versions:** You can specify either partial versions (e.g., `"15.00"`) for automatic latest patch selection, or full versions (e.g., `"15.00.4198.2.v1"`) for immutable deployments. See the main README for detailed version management guidance.
 
 ## License
 
