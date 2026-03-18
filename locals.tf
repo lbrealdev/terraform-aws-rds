@@ -1,5 +1,4 @@
 locals {
-  prefix_name        = "dev"
   rds_engine_version = "15.00.4198.2.v1"
 
   rds_settings = {
