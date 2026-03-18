@@ -12,7 +12,7 @@ This RDS stack is designed for production environments where:
 
 ## Architecture
 
-The stack consists of two complementary modules:
+The stack consists of three complementary modules:
 
 ### [RDS Settings Module](./modules/rds_settings/README.md)
 Manages RDS configuration groups across multiple database versions using `for_each` for stable resource management.
@@ -29,6 +29,14 @@ Creates the actual RDS database instances with configurable settings.
 - **Network Integration**: VPC security groups and subnet groups
 - **Maintenance Controls**: Version upgrades, snapshots, and immediate apply settings
 - **Complete Outputs**: Endpoint, ARN, status, and connection details
+
+### [RDS Networking Data Module](./modules/rds_networking_data/README.md)
+Fetches existing AWS networking resources with a toggle switch for conditional lookups.
+
+- **Existing Resource Lookup**: Fetch existing DB subnet groups and security groups
+- **Conditional Enable/Disable**: Toggle switch to control data source execution
+- **Flexible Networking**: Use existing or create new networking resources
+- **Zero-Cost Operation**: Data sources are free to query
 
 ## Quick Start
 
@@ -74,18 +82,23 @@ module "rds_instance_v16" {
 ```
 terraform-aws-rds/
 ├── modules/
-│   ├── rds_instance/     # RDS instance creation
+│   ├── rds_instance/           # RDS instance creation
 │   │   ├── README.md
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
-│   └── rds_settings/     # Parameter & option groups management
+│   ├── rds_settings/           # Parameter & option groups management
+│   │   ├── README.md
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── locals.tf
+│   │   └── outputs.tf
+│   └── rds_networking_data/    # Fetch existing networking resources
 │       ├── README.md
 │       ├── main.tf
 │       ├── variables.tf
-│       ├── locals.tf
 │       └── outputs.tf
-├── README.md             # This file
+├── README.md                   # This file
 └── .gitignore
 ```
 
@@ -95,6 +108,7 @@ terraform-aws-rds/
 |--------|-------------|---------------|
 | **rds_instance** | Creates RDS DB instances with full configuration | [View Docs](./modules/rds_instance/README.md) |
 | **rds_settings** | Manages parameter and option groups for upgrades | [View Docs](./modules/rds_settings/README.md) |
+| **rds_networking_data** | Fetches existing subnet groups and security groups | [View Docs](./modules/rds_networking_data/README.md) |
 
 ## Upgrade & Rollback Strategy
 
