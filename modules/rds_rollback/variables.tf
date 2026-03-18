@@ -29,13 +29,15 @@ variable "identifier" {
 }
 
 variable "engine" {
-  description = "The database engine to use (e.g., mysql, postgres, sqlserver-web)"
+  description = "The database engine to use (e.g., mysql, postgres, sqlserver-web) - not required when using snapshot_identifier"
   type        = string
+  default     = null
 }
 
 variable "engine_version" {
-  description = "The engine version to use"
+  description = "The engine version to use - not required when using snapshot_identifier"
   type        = string
+  default     = null
 }
 
 variable "instance_class" {

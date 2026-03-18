@@ -3,7 +3,7 @@ provider "aws" {
   default_tags {
     tags = {
       resource   = "rds"
-      managed-by = "terraform"
+      deployment = "terraform"
     }
   }
 }
@@ -39,7 +39,7 @@ module "rds_instance" {
   instance_class = var.db_instance_class
 
   engine         = module.rds_settings["v15"].engine_name
-  engine_version = local.rds_engine_version
+  engine_version = var.rds_engine_version
 
   option_group_name      = module.rds_settings["v15"].option_group_name
   parameter_group_name   = module.rds_settings["v15"].parameter_group_name
@@ -66,8 +66,6 @@ module "rds_rollback" {
 
   # Same configuration as original instance
   identifier     = var.rollback_identifier
-  engine         = "sqlserver-web"
-  engine_version = var.rollback_engine_version
   instance_class = var.rollback_instance_class
 
   db_subnet_group_name   = module.rds_networking_data.db_subnet_group_name

@@ -99,8 +99,8 @@ variable "rollback_instance_class" {
   default     = "db.t3.medium"
 }
 
-variable "rollback_engine_version" {
-  description = "The engine version for the rollback RDS instance"
+variable "rds_engine_version" {
+  description = "The engine version for the RDS instance"
   type        = string
   default     = "15.00.4198.2.v1"
 }

@@ -8,6 +8,7 @@ db_subnet_group_name = "your-db-subnet-group"
 security_group_names = ["your-security-group-1", "your-security-group-2"]
 
 # RDS Instance Configuration
+rds_engine_version             = "15.00.4198.2.v1"
 db_instance_class              = "db.t3.medium"
 db_username                    = "admin"
 db_password                    = "your-secure-password"
@@ -22,6 +23,5 @@ rollback_snapshot_identifier  = "rds:mydb-2024-03-18-14-30"
 rollback_stop_source_instance = true
 rollback_identifier           = "mydb-rollback"
 rollback_instance_class       = "db.t3.medium"
-rollback_engine_version       = "15.00.4198.2.v1"
 rollback_skip_final_snapshot  = false
 rollback_apply_immediately    = true
