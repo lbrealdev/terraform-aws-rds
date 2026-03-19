@@ -3,6 +3,7 @@ aws_region   = "eu-central-1"
 prefix_name  = "dev"
 
 # Networking
+networking_enabled   = true
 vpc_id               = "vpc-xxxxx"
 db_subnet_group_name = "your-db-subnet-group"
 security_group_names = ["your-security-group-1", "your-security-group-2"]

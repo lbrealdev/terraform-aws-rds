@@ -11,6 +11,12 @@ variable "prefix_name" {
 }
 
 # Networking Configuration
+variable "networking_enabled" {
+  description = "Enable or disable the networking data lookups"
+  type        = bool
+  default     = true
+}
+
 variable "vpc_id" {
   description = "VPC ID where networking resources are located"
   type        = string

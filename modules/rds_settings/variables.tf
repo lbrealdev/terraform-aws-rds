@@ -18,8 +18,9 @@ variable "parameter_group_description" {
 variable "parameter_group_parameters" {
   description = "List of parameters for the parameter group"
   type = list(object({
-    name  = string
-    value = string
+    name         = string
+    value        = string
+    apply_method = optional(string, "immediate")
   }))
   default = []
 }
@@ -40,4 +41,20 @@ variable "option_group_description" {
   description = "Description for the DB option group"
   type        = string
   default     = ""
+}
+
+variable "option_group_options" {
+  description = "List of options for the option group"
+  type = list(object({
+    option_name                   = string
+    db_security_group_memberships = optional(list(string), [])
+    option_settings = optional(list(object({
+      name  = string
+      value = string
+    })), [])
+    port                           = optional(number)
+    version                        = optional(string)
+    vpc_security_group_memberships = optional(list(string), [])
+  }))
+  default = []
 }

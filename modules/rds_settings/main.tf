@@ -10,6 +10,25 @@ resource "aws_db_option_group" "option_group" {
   major_engine_version     = var.major_engine_version
   option_group_description = var.option_group_description
 
+  dynamic "option" {
+    for_each = var.option_group_options
+    content {
+      option_name                    = option.value.option_name
+      db_security_group_memberships  = option.value.db_security_group_memberships
+      port                           = option.value.port
+      version                        = option.value.version
+      vpc_security_group_memberships = option.value.vpc_security_group_memberships
+
+      dynamic "option_settings" {
+        for_each = option.value.option_settings
+        content {
+          name  = option_settings.value.name
+          value = option_settings.value.value
+        }
+      }
+    }
+  }
+
   lifecycle {
     create_before_destroy = true
   }
@@ -23,8 +42,9 @@ resource "aws_db_parameter_group" "parameter_group" {
   dynamic "parameter" {
     for_each = var.parameter_group_parameters
     content {
-      name  = parameter.value.name
-      value = parameter.value.value
+      name         = parameter.value.name
+      value        = parameter.value.value
+      apply_method = parameter.value.apply_method
     }
   }
 

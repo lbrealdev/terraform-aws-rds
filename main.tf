@@ -11,7 +11,7 @@ provider "aws" {
 module "rds_networking_data" {
   source = "./modules/rds_networking_data"
 
-  enabled              = true
+  enabled              = var.networking_enabled
   vpc_id               = var.vpc_id
   db_subnet_group_name = var.db_subnet_group_name
   security_group_names = var.security_group_names
@@ -30,6 +30,7 @@ module "rds_settings" {
   engine_name              = each.value.option_group.engine_name
   major_engine_version     = each.value.option_group.major_engine_version
   option_group_description = each.value.option_group.description
+  option_group_options     = try(each.value.option_group.options, [])
 }
 
 module "rds_instance" {
