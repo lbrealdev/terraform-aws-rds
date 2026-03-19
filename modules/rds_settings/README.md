@@ -121,6 +121,7 @@ The `major_engine_version` (e.g., "16.00") is cleaned to extract just the intege
 | `parameter_group_description` | Description for parameter group | `string` | No |
 | `parameter_group_parameters` | List of parameter objects | `list(object)` | No |
 | `option_group_options` | List of option objects | `list(object)` | No |
+| `tags` | Map of tags to add to all resources | `map(string)` | No |
 
 ### Parameter Object Attributes
 

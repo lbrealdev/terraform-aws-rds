@@ -17,6 +17,18 @@ variable "networking_enabled" {
   default     = true
 }
 
+variable "db_instance_enabled" {
+  description = "Enable or disable the RDS instance creation"
+  type        = bool
+  default     = true
+}
+
+variable "rds_settings_tags" {
+  description = "Tags to add to the RDS settings resources (parameter and option groups)"
+  type        = map(string)
+  default     = {}
+}
+
 variable "vpc_id" {
   description = "VPC ID where networking resources are located"
   type        = string

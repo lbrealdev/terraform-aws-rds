@@ -9,6 +9,7 @@ resource "aws_db_option_group" "option_group" {
   engine_name              = var.engine_name
   major_engine_version     = var.major_engine_version
   option_group_description = var.option_group_description
+  tags                     = var.tags
 
   dynamic "option" {
     for_each = var.option_group_options
@@ -38,6 +39,7 @@ resource "aws_db_parameter_group" "parameter_group" {
   name        = local.parameter_group_name
   family      = var.family
   description = var.parameter_group_description != "" ? var.parameter_group_description : "Parameter group for ${var.prefix}"
+  tags        = var.tags
 
   dynamic "parameter" {
     for_each = var.parameter_group_parameters

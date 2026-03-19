@@ -31,11 +31,13 @@ module "rds_settings" {
   major_engine_version     = each.value.option_group.major_engine_version
   option_group_description = each.value.option_group.description
   option_group_options     = try(each.value.option_group.options, [])
+  tags                     = var.rds_settings_tags
 }
 
 module "rds_instance" {
   source = "./modules/rds_instance"
 
+  enabled        = var.db_instance_enabled
   identifier     = format("rds-%s-db-instance-test", var.prefix_name)
   instance_class = var.db_instance_class
 
@@ -64,7 +66,7 @@ module "rds_rollback" {
   snapshot_identifier = var.rollback_snapshot_identifier
 
   stop_source_instance = var.rollback_stop_source_instance
-  source_instance_id   = module.rds_instance.id
+  source_instance_id   = try(module.rds_instance.id, null)
 
   # Same configuration as original instance
   identifier     = var.rollback_identifier

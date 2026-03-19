@@ -1,4 +1,6 @@
 resource "aws_db_instance" "rds" {
+  count = var.enabled ? 1 : 0
+
   identifier                  = var.identifier
   engine                      = var.engine
   engine_version              = var.engine_version

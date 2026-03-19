@@ -3,6 +3,11 @@ variable "identifier" {
   type        = string
 }
 
+variable "enabled" {
+  description = "Enable or disable the RDS instance creation"
+  type        = bool
+}
+
 variable "engine" {
   description = "The database engine to use (e.g., mysql, postgres)"
   type        = string

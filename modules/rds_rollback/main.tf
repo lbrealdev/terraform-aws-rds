@@ -3,6 +3,8 @@ module "rds_instance" {
 
   count = var.enabled ? 1 : 0
 
+  enabled = var.enabled
+
   # Pass through all variables to rds_instance
   identifier                  = var.identifier
   engine                      = var.engine

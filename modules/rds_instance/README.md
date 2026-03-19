@@ -9,19 +9,20 @@ This Terraform module creates an AWS RDS DB instance with configurable settings.
 ```hcl
 module "rds_instance" {
   source = "./modules/rds_instance"
-  
+
   # Required configuration
+  enabled       = true
   identifier     = "my-app-db"
   engine         = "sqlserver-web"
   engine_version = "16.00"
   instance_class = "db.t3.micro"
   username       = "admin"
   password       = var.db_password
-  
+
   # Networking
   db_subnet_group_name   = "my-db-subnet-group"
   vpc_security_group_ids = ["sg-12345678"]
-  
+
   # Storage
   allocated_storage = 20
   storage_type      = "gp2"
@@ -48,6 +49,8 @@ module "rds_settings" {
 
 module "rds_instance" {
   source = "./modules/rds_instance"
+
+  enabled = true
 
   # Reference specific version from rds_settings
   parameter_group_name = module.rds_settings["v16"].parameter_group_name
@@ -94,6 +97,7 @@ module "rds_instance" {
 
 | Name | Description | Type |
 |------|-------------|------|
+| `enabled` | Enable or disable the RDS instance creation | `bool` |
 | `identifier` | The name of the RDS instance | `string` |
 | `engine` | The database engine to use (e.g., mysql, postgres, sqlserver-web) | `string` |
 | `engine_version` | The engine version to use | `string` |
@@ -134,6 +138,7 @@ module "rds_instance" {
 
 ## Notes
 
+- **Enabled Toggle:** Set `enabled = false` to create the module without deploying an actual RDS instance. This is useful for testing `rds_settings` module without provisioning database resources.
 - **Security:** The `password` variable is marked as sensitive to prevent it from appearing in logs and CLI output.
 - **Final Snapshots:** By default, `skip_final_snapshot` is set to `true` for easier deletion during development. Set to `false` for production to prevent data loss.
 - **Apply Immediately:** Changes are deferred to the maintenance window by default. Set `apply_immediately = true` for immediate changes (may cause brief downtime).
