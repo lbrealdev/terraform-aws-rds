@@ -35,42 +35,45 @@ module "rds_settings" {
   source   = "./modules/rds_settings"
   for_each = local.rds_settings
 
-  prefix_name             = var.prefix_name
-  family                  = each.value.family
-  engine_name             = each.value.engine_name
-  major_engine_version    = each.value.major_engine_version
-  option_group_options    = each.value.option_group_options
-  parameter_group_parameters = each.value.parameter_group_parameters
+  prefix                      = var.prefix_name
+  family                      = each.value.parameter_group.family
+  parameter_group_description = try(each.value.parameter_group.description, null)
+  parameter_group_parameters  = try(each.value.parameter_group.parameters, [])
+
+  engine_name              = each.value.option_group.engine_name
+  major_engine_version     = each.value.option_group.major_engine_version
+  option_group_description = each.value.option_group.description
+  option_group_options     = try(each.value.option_group.options, [])
 }
 
 module "rds_instance" {
   source = "./modules/rds_instance"
-  
+
   # Reference specific version from rds_settings
   parameter_group_name = module.rds_settings["v16"].parameter_group_name
   option_group_name    = module.rds_settings["v16"].option_group_name
-  
+
   # RDS Instance Configuration
   identifier     = "${var.prefix_name}-v16"
   engine         = "sqlserver-web"
   engine_version = "16.00"
   instance_class = "db.t3.micro"
-  
+
   username = "admin"
   password = var.db_password
-  
+
   # Networking
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  
+
   # Storage
-  allocated_storage = 20
+  allocated_storage = 100
   storage_type      = "gp2"
-  
+
   # Maintenance settings
   skip_final_snapshot = true
   apply_immediately   = false
-  
+
   tags = {
     Environment = "production"
     Project     = "myapp"

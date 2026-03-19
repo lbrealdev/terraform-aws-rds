@@ -22,7 +22,7 @@ module "rds_settings" {
 
   for_each = local.rds_settings
 
-  prefix_name                 = var.prefix_name
+  prefix                      = var.prefix_name
   family                      = each.value.parameter_group.family
   parameter_group_description = try(each.value.parameter_group.description, null)
   parameter_group_parameters  = try(each.value.parameter_group.parameters, [])

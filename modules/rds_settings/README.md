@@ -50,11 +50,11 @@ The `rds_settings` module provides these outputs:
 
 ```hcl
 # Parameter group resources
-module.rds_settings["v16"].parameter_group_name  # "dev-parameter-group-v16"
+module.rds_settings["v16"].parameter_group_name  # "dev-parameter-group-16"
 module.rds_settings["v16"].parameter_group_arn   # ARN for IAM policies
 
 # Option group resources
-module.rds_settings["v16"].option_group_name     # "dev-option-group-v16"
+module.rds_settings["v16"].option_group_name     # "dev-option-group-16"
 module.rds_settings["v16"].option_group_id       # ID for references
 ```
 
@@ -64,13 +64,13 @@ When applied, these outputs are available:
 
 ```hcl
 rds_parameter_group_names = {
-  "v15" = "dev-parameter-group-v15"
-  "v16" = "dev-parameter-group-v16"
+  "v15" = "dev-parameter-group-15"
+  "v16" = "dev-parameter-group-16"
 }
 
 rds_option_group_names = {
-  "v15" = "dev-option-group-v15"
-  "v16" = "dev-option-group-v16"
+  "v15" = "dev-option-group-15"
+  "v16" = "dev-option-group-16"
 }
 ```
 
@@ -93,10 +93,10 @@ locals {
 ### Resource Naming Convention
 
 Resources are named using the pattern:
-- Parameter Group: `{prefix_name}-parameter-group-v{major_version}`
-  - Example: `dev-parameter-group-v16`
-- Option Group: `{prefix_name}-option-group-v{major_version}`
-  - Example: `dev-option-group-v16`
+- Parameter Group: `{prefix}-parameter-group-{major_version}`
+  - Example: `dev-parameter-group-16`
+- Option Group: `{prefix}-option-group-{major_version}`
+  - Example: `dev-option-group-16`
 
 The `major_engine_version` (e.g., "16.00") is cleaned to extract just the integer ("16") for naming.
 
@@ -113,13 +113,33 @@ The `major_engine_version` (e.g., "16.00") is cleaned to extract just the intege
 
 | Name | Description | Type | Required |
 |------|-------------|------|----------|
-| `prefix_name` | Prefix for resource names | `string` | Yes |
-| `family` | Parameter group family | `string` | Yes |
-| `engine_name` | Database engine name | `string` | Yes |
-| `major_engine_version` | Major engine version | `string` | Yes |
+| `prefix` | Prefix for resource names | `string` | Yes |
+| `family` | Parameter group family (e.g., `sqlserver-web-15.0`) | `string` | Yes |
+| `engine_name` | Database engine name (e.g., `sqlserver-web`) | `string` | Yes |
+| `major_engine_version` | Major engine version (e.g., `15.00`) | `string` | Yes |
 | `option_group_description` | Description for option group | `string` | No |
 | `parameter_group_description` | Description for parameter group | `string` | No |
-| `parameter_group_parameters` | List of parameters | `list(object)` | No |
+| `parameter_group_parameters` | List of parameter objects | `list(object)` | No |
+| `option_group_options` | List of option objects | `list(object)` | No |
+
+### Parameter Object Attributes
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `name` | Yes | Parameter name |
+| `value` | Yes | Parameter value |
+| `apply_method` | No | `immediate` (default) or `pending-reboot` |
+
+### Option Object Attributes
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `option_name` | Yes | Option name |
+| `db_security_group_memberships` | No | List of DB security group names |
+| `option_settings` | No | List of `{name, value}` objects |
+| `port` | No | Port number |
+| `version` | No | Option version |
+| `vpc_security_group_memberships` | No | List of VPC security group IDs |
 
 ## License
 
