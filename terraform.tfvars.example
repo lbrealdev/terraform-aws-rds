@@ -10,6 +10,7 @@ security_group_names = ["your-security-group-1", "your-security-group-2"]
 # RDS Instance Configuration
 rds_engine_version             = "15.00.4198.2.v1"
 db_instance_class              = "db.t3.medium"
+db_allocated_storage           = 100
 db_username                    = "admin"
 db_password                    = "your-secure-password"
 db_apply_immediately           = true

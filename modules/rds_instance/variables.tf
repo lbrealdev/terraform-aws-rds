@@ -32,7 +32,6 @@ variable "password" {
 variable "allocated_storage" {
   description = "The allocated storage in gigabytes (minimum 20 for SQL Server Express, 100 for SQL Server Web/Standard)"
   type        = number
-  default     = 100
 }
 
 variable "storage_type" {

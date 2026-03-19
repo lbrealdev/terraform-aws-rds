@@ -105,6 +105,12 @@ variable "rds_engine_version" {
   default     = "15.00.4198.2.v1"
 }
 
+variable "db_allocated_storage" {
+  description = "The allocated storage in gigabytes for the RDS instance"
+  type        = number
+  default     = 100
+}
+
 variable "rollback_skip_final_snapshot" {
   description = "Skip final snapshot for rollback instance"
   type        = bool

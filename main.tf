@@ -51,8 +51,9 @@ module "rds_instance" {
   auto_minor_version_upgrade  = var.db_auto_minor_version_upgrade
   skip_final_snapshot         = var.db_skip_final_snapshot
 
-  username = var.db_username
-  password = var.db_password
+  username          = var.db_username
+  password          = var.db_password
+  allocated_storage = var.db_allocated_storage
 }
 
 module "rds_rollback" {
