@@ -1,7 +1,8 @@
 locals {
   major_version        = split(".", var.major_engine_version)[0]
-  parameter_group_name = "${var.prefix}-parameter-group-${local.major_version}"
-  option_group_name    = "${var.prefix}-option-group-${local.major_version}"
+  effective_name       = coalesce(var.name, var.prefix)
+  parameter_group_name = "${local.effective_name}-parameter-group-${local.major_version}"
+  option_group_name    = "${local.effective_name}-option-group-${local.major_version}"
 }
 
 resource "aws_db_option_group" "option_group" {
@@ -38,7 +39,7 @@ resource "aws_db_option_group" "option_group" {
 resource "aws_db_parameter_group" "parameter_group" {
   name        = local.parameter_group_name
   family      = var.family
-  description = var.parameter_group_description != "" ? var.parameter_group_description : "Parameter group for ${var.prefix}"
+  description = var.parameter_group_description != "" ? var.parameter_group_description : "Parameter group for ${local.effective_name}"
   tags        = var.tags
 
   dynamic "parameter" {

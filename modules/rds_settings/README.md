@@ -93,10 +93,14 @@ locals {
 ### Resource Naming Convention
 
 Resources are named using the pattern:
-- Parameter Group: `{prefix}-parameter-group-{major_version}`
-  - Example: `dev-parameter-group-16`
-- Option Group: `{prefix}-option-group-{major_version}`
-  - Example: `dev-option-group-16`
+- Parameter Group: `{name_or_prefix}-parameter-group-{major_version}`
+  - Example with `name = ""`: `dev-parameter-group-16`
+  - Example with `name = "prod"`: `prod-parameter-group-16`
+- Option Group: `{name_or_prefix}-option-group-{major_version}`
+  - Example with `name = ""`: `dev-option-group-16`
+  - Example with `name = "prod"`: `prod-option-group-16`
+
+The `name` variable overrides `prefix` when provided (non-empty). If `name` is empty, `prefix` is used instead.
 
 The `major_engine_version` (e.g., "16.00") is cleaned to extract just the integer ("16") for naming.
 
@@ -113,7 +117,8 @@ The `major_engine_version` (e.g., "16.00") is cleaned to extract just the intege
 
 | Name | Description | Type | Required |
 |------|-------------|------|----------|
-| `prefix` | Prefix for resource names | `string` | Yes |
+| `name` | Custom name for resource naming. If empty, uses `prefix` | `string` | No |
+| `prefix` | Prefix for resource names (used when `name` is empty) | `string` | Yes |
 | `family` | Parameter group family (e.g., `sqlserver-web-15.0`) | `string` | Yes |
 | `engine_name` | Database engine name (e.g., `sqlserver-web`) | `string` | Yes |
 | `major_engine_version` | Major engine version (e.g., `15.00`) | `string` | Yes |

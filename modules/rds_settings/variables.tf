@@ -1,6 +1,12 @@
 variable "prefix" {
-  description = "Prefix for resource naming"
+  description = "Prefix for resource naming (used when name is empty)"
   type        = string
+}
+
+variable "name" {
+  description = "Custom name for resource naming. If empty, uses var.prefix"
+  type        = string
+  default     = ""
 }
 
 variable "family" {
