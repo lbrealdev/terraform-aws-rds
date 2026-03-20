@@ -1,37 +1,58 @@
 locals {
-  rds_engine_version = "15.00.4198.2.v1"
+  rds_parameters = []
+  rds_options    = []
 
   rds_settings = {
 
     "v15" = {
-      # parameter group v15
+      name = ""
+
       parameter_group = {
         family      = "sqlserver-web-15.0"
         description = "Production parameter group for SQL 19"
-        parameters  = []
+        parameters  = local.rds_parameters
       }
 
-      # option group
       option_group = {
         engine_name          = "sqlserver-web"
         major_engine_version = "15.00"
         description          = "RDS Option Group - SQL 19 (v15)"
+        options              = local.rds_options
       }
     }
 
     "v16" = {
-      # parameter group v16
+      name = ""
+
       parameter_group = {
         family      = "sqlserver-web-16.0"
         description = "Production parameter group for SQL 22"
-        parameters  = []
+        parameters  = local.rds_parameters
       }
 
-      # option group
       option_group = {
         engine_name          = "sqlserver-web"
         major_engine_version = "16.00"
         description          = "RDS Option Group - SQL 22 (v16)"
+        options              = local.rds_options
+      }
+    }
+
+    # Example with custom name
+    "v17" = {
+      name = "${var.prefix_name}-infra"
+
+      parameter_group = {
+        family      = "sqlserver-web-16.0"
+        description = "Infra adjustment parameter group"
+        parameters  = local.rds_parameters
+      }
+
+      option_group = {
+        engine_name          = "sqlserver-web"
+        major_engine_version = "16.00"
+        description          = "Infra adjustment option group"
+        options              = local.rds_options
       }
     }
   }

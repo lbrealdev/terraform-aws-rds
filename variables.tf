@@ -11,6 +11,24 @@ variable "prefix_name" {
 }
 
 # Networking Configuration
+variable "networking_enabled" {
+  description = "Enable or disable the networking data lookups"
+  type        = bool
+  default     = true
+}
+
+variable "db_instance_enabled" {
+  description = "Enable or disable the RDS instance creation"
+  type        = bool
+  default     = true
+}
+
+variable "rds_settings_tags" {
+  description = "Tags to add to the RDS settings resources (parameter and option groups)"
+  type        = map(string)
+  default     = {}
+}
+
 variable "vpc_id" {
   description = "VPC ID where networking resources are located"
   type        = string
@@ -99,16 +117,28 @@ variable "rollback_instance_class" {
   default     = "db.t3.medium"
 }
 
-variable "rollback_engine_version" {
-  description = "The engine version for the rollback RDS instance"
+variable "rds_engine_version" {
+  description = "The engine version for the RDS instance"
   type        = string
   default     = "15.00.4198.2.v1"
+}
+
+variable "db_allocated_storage" {
+  description = "The allocated storage in gigabytes for the RDS instance"
+  type        = number
+  default     = 100
 }
 
 variable "rollback_skip_final_snapshot" {
   description = "Skip final snapshot for rollback instance"
   type        = bool
   default     = false
+}
+
+variable "rollback_final_snapshot_identifier" {
+  description = "The name of your final DB snapshot when rollback instance is deleted. Required if rollback_skip_final_snapshot is false"
+  type        = string
+  default     = null
 }
 
 variable "rollback_apply_immediately" {

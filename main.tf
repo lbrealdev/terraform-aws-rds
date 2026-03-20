@@ -3,7 +3,7 @@ provider "aws" {
   default_tags {
     tags = {
       resource   = "rds"
-      managed-by = "terraform"
+      deployment = "terraform"
     }
   }
 }
@@ -11,7 +11,7 @@ provider "aws" {
 module "rds_networking_data" {
   source = "./modules/rds_networking_data"
 
-  enabled              = true
+  enabled              = var.networking_enabled
   vpc_id               = var.vpc_id
   db_subnet_group_name = var.db_subnet_group_name
   security_group_names = var.security_group_names
@@ -22,7 +22,8 @@ module "rds_settings" {
 
   for_each = local.rds_settings
 
-  prefix_name                 = var.prefix_name
+  name                        = try(each.value.name, "")
+  prefix                      = var.prefix_name
   family                      = each.value.parameter_group.family
   parameter_group_description = try(each.value.parameter_group.description, null)
   parameter_group_parameters  = try(each.value.parameter_group.parameters, [])
@@ -30,16 +31,19 @@ module "rds_settings" {
   engine_name              = each.value.option_group.engine_name
   major_engine_version     = each.value.option_group.major_engine_version
   option_group_description = each.value.option_group.description
+  option_group_options     = try(each.value.option_group.options, [])
+  tags                     = var.rds_settings_tags
 }
 
 module "rds_instance" {
   source = "./modules/rds_instance"
 
+  enabled        = var.db_instance_enabled
   identifier     = format("rds-%s-db-instance-test", var.prefix_name)
   instance_class = var.db_instance_class
 
   engine         = module.rds_settings["v15"].engine_name
-  engine_version = local.rds_engine_version
+  engine_version = var.rds_engine_version
 
   option_group_name      = module.rds_settings["v15"].option_group_name
   parameter_group_name   = module.rds_settings["v15"].parameter_group_name
@@ -51,8 +55,9 @@ module "rds_instance" {
   auto_minor_version_upgrade  = var.db_auto_minor_version_upgrade
   skip_final_snapshot         = var.db_skip_final_snapshot
 
-  username = var.db_username
-  password = var.db_password
+  username          = var.db_username
+  password          = var.db_password
+  allocated_storage = var.db_allocated_storage
 }
 
 module "rds_rollback" {
@@ -62,12 +67,10 @@ module "rds_rollback" {
   snapshot_identifier = var.rollback_snapshot_identifier
 
   stop_source_instance = var.rollback_stop_source_instance
-  source_instance_id   = module.rds_instance.id
+  source_instance_id   = try(module.rds_instance.id, null)
 
   # Same configuration as original instance
   identifier     = var.rollback_identifier
-  engine         = "sqlserver-web"
-  engine_version = var.rollback_engine_version
   instance_class = var.rollback_instance_class
 
   db_subnet_group_name   = module.rds_networking_data.db_subnet_group_name
@@ -76,8 +79,9 @@ module "rds_rollback" {
   parameter_group_name = module.rds_settings["v15"].parameter_group_name
   option_group_name    = module.rds_settings["v15"].option_group_name
 
-  skip_final_snapshot = var.rollback_skip_final_snapshot
-  apply_immediately   = var.rollback_apply_immediately
+  skip_final_snapshot       = var.rollback_skip_final_snapshot
+  final_snapshot_identifier = var.rollback_final_snapshot_identifier
+  apply_immediately         = var.rollback_apply_immediately
 
   tags = {
     Purpose = "rollback"

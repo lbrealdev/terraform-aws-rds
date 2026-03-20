@@ -3,6 +3,11 @@ variable "identifier" {
   type        = string
 }
 
+variable "enabled" {
+  description = "Enable or disable the RDS instance creation"
+  type        = bool
+}
+
 variable "engine" {
   description = "The database engine to use (e.g., mysql, postgres)"
   type        = string
@@ -30,9 +35,8 @@ variable "password" {
 }
 
 variable "allocated_storage" {
-  description = "The allocated storage in gigabytes"
+  description = "The allocated storage in gigabytes (minimum 20 for SQL Server Express, 100 for SQL Server Web/Standard)"
   type        = number
-  default     = 20
 }
 
 variable "storage_type" {
@@ -45,6 +49,12 @@ variable "skip_final_snapshot" {
   description = "Determines whether a final DB snapshot is created before the DB instance is deleted"
   type        = bool
   default     = true
+}
+
+variable "final_snapshot_identifier" {
+  description = "The name of your final DB snapshot when this DB instance is deleted. Must be provided if skip_final_snapshot is false"
+  type        = string
+  default     = null
 }
 
 variable "option_group_name" {
