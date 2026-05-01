@@ -32,6 +32,10 @@ alias sts := aws-check
 # Usage: just destroy "-var-file=tfvars/dev.tfvars"
 @tf-destroy *var:
     terraform plan -destroy -out destroy {{ var }}
+    just _tf-destroy
+
+[confirm("Are you sure you want to destroy all Terraform resources? This action cannot be undone.")]
+@_tf-destroy:
     terraform apply destroy
 
 # Format terraform files (write changes in place)

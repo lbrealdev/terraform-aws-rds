@@ -9,19 +9,20 @@ This Terraform module creates an AWS RDS DB instance with configurable settings.
 ```hcl
 module "rds_instance" {
   source = "./modules/rds_instance"
-  
+
   # Required configuration
+  enabled       = true
   identifier     = "my-app-db"
   engine         = "sqlserver-web"
   engine_version = "16.00"
   instance_class = "db.t3.micro"
   username       = "admin"
   password       = var.db_password
-  
+
   # Networking
   db_subnet_group_name   = "my-db-subnet-group"
   vpc_security_group_ids = ["sg-12345678"]
-  
+
   # Storage
   allocated_storage = 20
   storage_type      = "gp2"
@@ -35,42 +36,47 @@ module "rds_settings" {
   source   = "./modules/rds_settings"
   for_each = local.rds_settings
 
-  prefix_name             = var.prefix_name
-  family                  = each.value.family
-  engine_name             = each.value.engine_name
-  major_engine_version    = each.value.major_engine_version
-  option_group_options    = each.value.option_group_options
-  parameter_group_parameters = each.value.parameter_group_parameters
+  prefix                      = var.prefix_name
+  family                      = each.value.parameter_group.family
+  parameter_group_description = try(each.value.parameter_group.description, null)
+  parameter_group_parameters  = try(each.value.parameter_group.parameters, [])
+
+  engine_name              = each.value.option_group.engine_name
+  major_engine_version     = each.value.option_group.major_engine_version
+  option_group_description = each.value.option_group.description
+  option_group_options     = try(each.value.option_group.options, [])
 }
 
 module "rds_instance" {
   source = "./modules/rds_instance"
-  
+
+  enabled = true
+
   # Reference specific version from rds_settings
   parameter_group_name = module.rds_settings["v16"].parameter_group_name
   option_group_name    = module.rds_settings["v16"].option_group_name
-  
+
   # RDS Instance Configuration
   identifier     = "${var.prefix_name}-v16"
   engine         = "sqlserver-web"
   engine_version = "16.00"
   instance_class = "db.t3.micro"
-  
+
   username = "admin"
   password = var.db_password
-  
+
   # Networking
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  
+
   # Storage
-  allocated_storage = 20
+  allocated_storage = 100
   storage_type      = "gp2"
-  
+
   # Maintenance settings
   skip_final_snapshot = true
   apply_immediately   = false
-  
+
   tags = {
     Environment = "production"
     Project     = "myapp"
@@ -91,6 +97,7 @@ module "rds_instance" {
 
 | Name | Description | Type |
 |------|-------------|------|
+| `enabled` | Enable or disable the RDS instance creation | `bool` |
 | `identifier` | The name of the RDS instance | `string` |
 | `engine` | The database engine to use (e.g., mysql, postgres, sqlserver-web) | `string` |
 | `engine_version` | The engine version to use | `string` |
@@ -103,7 +110,7 @@ module "rds_instance" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `allocated_storage` | The allocated storage in gigabytes | `number` | `20` |
+| `allocated_storage` | The allocated storage in gigabytes | `number` | `100` |
 | `storage_type` | Storage type: 'standard', 'gp2', or 'io1' | `string` | `"gp2"` |
 | `skip_final_snapshot` | Skip final snapshot before deletion | `bool` | `true` |
 | `vpc_security_group_ids` | List of VPC security groups to associate | `list(string)` | `[]` |
@@ -131,6 +138,7 @@ module "rds_instance" {
 
 ## Notes
 
+- **Enabled Toggle:** Set `enabled = false` to create the module without deploying an actual RDS instance. This is useful for testing `rds_settings` module without provisioning database resources.
 - **Security:** The `password` variable is marked as sensitive to prevent it from appearing in logs and CLI output.
 - **Final Snapshots:** By default, `skip_final_snapshot` is set to `true` for easier deletion during development. Set to `false` for production to prevent data loss.
 - **Apply Immediately:** Changes are deferred to the maintenance window by default. Set `apply_immediately = true` for immediate changes (may cause brief downtime).

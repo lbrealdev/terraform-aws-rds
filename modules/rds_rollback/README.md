@@ -209,18 +209,19 @@ resource "aws_rds_instance_state" "manual_stop" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
 | `identifier` | The name of the RDS instance | `string` | - | Yes |
-| `engine` | The database engine | `string` | - | Yes |
-| `engine_version` | The engine version | `string` | - | Yes |
+| `engine` | The database engine (optional when using snapshot) | `string` | `null` | No |
+| `engine_version` | The engine version (optional when using snapshot) | `string` | `null` | No |
 | `instance_class` | The instance type | `string` | - | Yes |
 | `username` | Username for master DB user | `string` | `null` | Yes |
 | `password` | Password for master DB user | `string` | `null` | Yes |
-| `allocated_storage` | Allocated storage in GB | `number` | `20` | No |
-| `storage_type` | Storage type | `string` | `"gp2"` | No |
+| `allocated_storage` | Allocated storage in GB (inherited from snapshot) | `number` | `null` | No |
+| `storage_type` | Storage type (inherited from snapshot) | `string` | `null` | No |
 | `db_subnet_group_name` | Name of DB subnet group | `string` | `null` | No |
 | `vpc_security_group_ids` | List of VPC security groups | `list(string)` | `[]` | No |
 | `parameter_group_name` | Name of DB parameter group | `string` | `null` | No |
 | `option_group_name` | Name of DB option group | `string` | `null` | No |
 | `skip_final_snapshot` | Skip final snapshot | `bool` | `true` | No |
+| `final_snapshot_identifier` | Name of final snapshot (required if skip_final_snapshot is false) | `string` | `null` | No |
 | `apply_immediately` | Apply changes immediately | `bool` | `null` | No |
 | `allow_major_version_upgrade` | Allow major version upgrades | `bool` | `null` | No |
 | `auto_minor_version_upgrade` | Auto minor version upgrades | `bool` | `null` | No |

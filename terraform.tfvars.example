@@ -3,12 +3,16 @@ aws_region   = "eu-central-1"
 prefix_name  = "dev"
 
 # Networking
+networking_enabled   = true
 vpc_id               = "vpc-xxxxx"
 db_subnet_group_name = "your-db-subnet-group"
 security_group_names = ["your-security-group-1", "your-security-group-2"]
 
 # RDS Instance Configuration
+db_instance_enabled            = true
+rds_engine_version             = "15.00.4198.2.v1"
 db_instance_class              = "db.t3.medium"
+db_allocated_storage           = 100
 db_username                    = "admin"
 db_password                    = "your-secure-password"
 db_apply_immediately           = true
@@ -17,11 +21,11 @@ db_auto_minor_version_upgrade  = true
 db_skip_final_snapshot         = false
 
 # Rollback Configuration
-rollback_enabled              = false
-rollback_snapshot_identifier  = "rds:mydb-2024-03-18-14-30"
-rollback_stop_source_instance = true
-rollback_identifier           = "mydb-rollback"
-rollback_instance_class       = "db.t3.medium"
-rollback_engine_version       = "15.00.4198.2.v1"
-rollback_skip_final_snapshot  = false
-rollback_apply_immediately    = true
+rollback_enabled                   = false
+rollback_snapshot_identifier       = "rds:mydb-2024-03-18-14-30"
+rollback_stop_source_instance      = true
+rollback_identifier                = "mydb-rollback"
+rollback_instance_class            = "db.t3.medium"
+rollback_skip_final_snapshot       = false
+rollback_final_snapshot_identifier = "mydb-rollback-final-snapshot"
+rollback_apply_immediately         = true

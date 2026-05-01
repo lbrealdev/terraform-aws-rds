@@ -66,23 +66,122 @@ module "rds_settings" {
 
 module "rds_instance_v16" {
   source = "./modules/rds_instance"
-  
+
   identifier     = "production-app-v16"
   engine         = "sqlserver-web"
   engine_version = "16.00"
   instance_class = "db.t3.micro"
-  
+
   parameter_group_name = module.rds_settings["v16"].parameter_group_name
   option_group_name    = module.rds_settings["v16"].option_group_name
-  
+
   username             = "admin"
   password             = var.db_password
   db_subnet_group_name = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  
+
   skip_final_snapshot = false
   apply_immediately   = false
 }
+```
+
+## Configuring Parameters and Options
+
+The `locals.tf` file defines shared `rds_parameters` and `rds_options` variables that are applied to all SQL Server versions. This allows you to define parameters and options once and reuse them across version configurations.
+
+### Example: Database Parameters
+
+```hcl
+# In locals.tf
+locals {
+  rds_parameters = [
+    {
+      name         = "max_connections"
+      value        = "100"
+      apply_method = "immediate"
+    },
+    {
+      name         = "locked"
+      value        = "1"
+      apply_method = "pending-reboot"
+    }
+  ]
+
+  rds_options = [
+    {
+      option_name = "SQLSERVER_BACKUP_RESTORE"
+      option_settings = [
+        {
+          name  = "IAM_ROLE_ARN"
+          value = "arn:aws:iam::123456789:role/my-backup-role"
+        }
+      ]
+    }
+  ]
+
+  rds_settings = {
+    # ... version configurations reference local.rds_parameters and local.rds_options
+  }
+}
+```
+
+### Parameter Block Attributes
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `name` | Yes | Parameter name (e.g., `max_connections`) |
+| `value` | Yes | Parameter value |
+| `apply_method` | No | `immediate` (default) or `pending-reboot` |
+
+### Option Block Attributes
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `option_name` | Yes | Option name (e.g., `SQLSERVER_BACKUP_RESTORE`) |
+| `db_security_group_memberships` | No | List of DB security group names |
+| `option_settings` | No | List of setting objects with `name` and `value` |
+| `port` | No | Port number for the option |
+| `version` | No | Option version |
+| `vpc_security_group_memberships` | No | List of VPC security group IDs |
+
+### Common Options for SQL Server
+
+**SQLSERVER_BACKUP_RESTORE** - Enable native backup/restore with S3:
+```hcl
+rds_options = [
+  {
+    option_name = "SQLSERVER_BACKUP_RESTORE"
+    option_settings = [
+      {
+        name  = "IAM_ROLE_ARN"
+        value = "arn:aws:iam::123456789:role/my-backup-role"
+      }
+    ]
+  }
+]
+```
+
+**SQLSERVER Native BACKUP** - Configure backup schedule:
+```hcl
+rds_options = [
+  {
+    option_name = "SQLSERVER_BACKUP"
+    option_settings = [
+      {
+        name  = "BACKUP_HOUR"
+        value = "02"  # 2 AM UTC
+      },
+      {
+        name  = "BACKUP_MINUTE"
+        value = "00"
+      },
+      {
+        name  = "ENABLED"
+        value = "true"
+      }
+    ]
+  }
+]
 ```
 
 ## Repository Structure
