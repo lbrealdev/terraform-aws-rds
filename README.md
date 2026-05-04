@@ -48,14 +48,12 @@ Creates RDS instances from snapshots for rollback scenarios after failed upgrade
 
 ## Quick Start
 
-### Deploy Multiple SQL Server Versions
-
 ```hcl
 module "rds_settings" {
   source   = "./modules/rds_settings"
   for_each = {
-    "v15" = { major_engine_version = "15.00", family = "sqlserver-web-15.0" }
-    "v16" = { major_engine_version = "16.00", family = "sqlserver-web-16.0" }
+    "v15"   = { major_engine_version = "15.00", family = "sqlserver-web-15.0" }
+    "v16"   = { major_engine_version = "16.00", family = "sqlserver-web-16.0" }
   }
 
   prefix_name             = "production"
@@ -83,7 +81,74 @@ module "rds_instance_v16" {
   skip_final_snapshot = false
   apply_immediately   = false
 }
+
+# MySQL Example
+module "rds_mysql" {
+  source = "./modules/rds_settings"
+  for_each = {
+    "mysql8" = { major_engine_version = "8.0", family = "mysql8.0" }
+  }
+
+  prefix_name             = "app-mysql"
+  family                  = each.value.family
+  engine_name             = "mysql"
+  major_engine_version    = each.value.major_engine_version
+}
+
+module "rds_mysql_instance" {
+  source = "./modules/rds_instance"
+
+  identifier     = "app-mysql-prod"
+  engine         = "mysql"
+  engine_version = "8.0"
+  instance_class = "db.t3.micro"
+
+  parameter_group_name = module.rds_mysql["mysql8"].parameter_group_name
+  option_group_name    = module.rds_mysql["mysql8"].option_group_name
+
+  username             = "admin"
+  password             = var.db_password
+  db_subnet_group_name = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  skip_final_snapshot = false
+  apply_immediately   = false
+}
+
+# PostgreSQL Example
+module "rds_postgres" {
+  source = "./modules/rds_settings"
+  for_each = {
+    "pg15" = { major_engine_version = "15", family = "aurora-postgresql15" }
+  }
+
+  prefix_name             = "app-postgres"
+  family                  = each.value.family
+  engine_name             = "aurora-postgresql"
+  major_engine_version    = each.value.major_engine_version
+}
+
+module "rds_postgres_instance" {
+  source = "./modules/rds_instance"
+
+  identifier     = "app-postgres-prod"
+  engine         = "aurora-postgresql"
+  engine_version = "15.7"
+  instance_class = "db.t3.micro"
+
+  parameter_group_name = module.rds_postgres["pg15"].parameter_group_name
+  option_group_name    = module.rds_postgres["pg15"].option_group_name
+
+  username             = "admin"
+  password             = var.db_password
+  db_subnet_group_name = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  skip_final_snapshot = false
+  apply_immediately   = false
+}
 ```
+
 
 ## Configuring Parameters and Options
 
@@ -335,6 +400,38 @@ RDS accepts two formats for engine versions:
    ```
 
 This approach ensures your infrastructure remains stable and predictable across deployments.
+
+## Parameter and Option Group Families Reference
+
+This repository supports multiple RDS engines with comprehensive parameter group family and option group support.
+
+For complete documentation including all available parameter group families, option groups, and migration guides, see [RDS_OPTIONS_REFERENCE.md](./RDS_OPTIONS_REFERENCE.md).
+
+### Supported Engines
+
+| Engine | Parameter Group Families | Option Groups |
+|--------|-------------------------|---------------|
+| **SQL Server** | sqlserver-se-15.0, sqlserver-se-16.0, sqlserver-ee-15.0, sqlserver-ee-16.0, sqlserver-ex-15.0, sqlserver-web-15.0, sqlserver-web-16.0 | Default option groups for each edition and version |
+| **MySQL** | mysql5.6, mysql5.7, mysql8.0 | Standard MySQL option groups |
+| **PostgreSQL** | postgres10, postgres11, postgres12, postgres13, postgres14, postgres15, postgres16 | PostgreSQL option groups |
+| **Aurora MySQL** | aurora-mysql5.7, aurora-mysql8.0 | Aurora MySQL option groups |
+| **Aurora PostgreSQL** | aurora-postgresql10 through aurora-postgresql16 | Aurora PostgreSQL option groups |
+
+### Parameter Group Family Selection
+
+**SQL Server:**
+- Choose based on your installed edition: `web`, `se` (standard), `ee` (enterprise), or `ex` (express)
+- Match version: 15.0 or 16.0 (for SQL Server 2019 and 2022)
+- Example: `sqlserver-se-16.0` for SQL Server Standard 16.0
+
+**MySQL:**
+- Use `mysql8.0` for MySQL 8.0+
+- Use `mysql5.7` for MySQL 5.7+
+- Use `mysql5.6` for legacy MySQL 5.6
+
+**PostgreSQL:**
+- Use latest available version: `postgres16` (PostgreSQL 16)
+- For Aurora PostgreSQL, use `aurora-postgresql{version}` where version matches your Aurora compatibility
 
 ## Upgrade & Rollback Strategy
 
