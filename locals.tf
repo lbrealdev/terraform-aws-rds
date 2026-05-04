@@ -9,14 +9,14 @@ locals {
 
       parameter_group = {
         family      = "sqlserver-web-15.0"
-        description = "Production parameter group for SQL 19"
+        description = "Production parameter group for SQL Server 2019 (v15)"
         parameters  = local.rds_parameters
       }
 
       option_group = {
         engine_name          = "sqlserver-web"
         major_engine_version = "15.00"
-        description          = "RDS Option Group - SQL 19 (v15)"
+        description          = "RDS Option Group for SQL Server 2019 Web (v15)"
         options              = local.rds_options
       }
     }
@@ -26,14 +26,14 @@ locals {
 
       parameter_group = {
         family      = "sqlserver-web-16.0"
-        description = "Production parameter group for SQL 22"
+        description = "Production parameter group for SQL Server 2022 (v16)"
         parameters  = local.rds_parameters
       }
 
       option_group = {
         engine_name          = "sqlserver-web"
         major_engine_version = "16.00"
-        description          = "RDS Option Group - SQL 22 (v16)"
+        description          = "RDS Option Group for SQL Server 2022 Web (v16)"
         options              = local.rds_options
       }
     }
@@ -44,14 +44,14 @@ locals {
 
       parameter_group = {
         family      = "sqlserver-web-16.0"
-        description = "Infra adjustment parameter group"
+        description = "Infra parameter group for SQL Server 2022 (v16)"
         parameters  = local.rds_parameters
       }
 
       option_group = {
         engine_name          = "sqlserver-web"
         major_engine_version = "16.00"
-        description          = "Infra adjustment option group"
+        description          = "Infra option group for SQL Server 2022 (v16)"
         options              = local.rds_options
       }
     }
