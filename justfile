@@ -5,21 +5,25 @@ set dotenv-load := true
 # ============================================================================
 alias t := mise-tools
 alias sts := aws-check
-alias p := tf-plan
-alias apply := tf-apply
-alias destroy-terraform := tf-destroy
-alias fmt := tf-lint
-alias validate := tf-check
-alias docs := tf-docs
-alias list-state := tf-list
-alias show-state := tf-show
-alias refresh := tf-refresh
+
+# Simple aliases for terraform recipes
+alias check := aws-check      # tf-check alias
+alias p := tf-plan             # tf-plan alias
+alias apply := tf-apply        # tf-apply alias
+alias destroy := tf-destroy    # tf-destroy alias
+alias fmt := tf-lint           # tf-lint alias
+alias validate := tf-check     # tf-check alias
+alias docs := tf-docs          # tf-docs alias
+alias init := tf-init          # tf-init alias
+alias list := tf-list          # tf-list alias
+alias show := tf-show          # tf-show alias
+alias refresh := tf-refresh    # tf-refresh alias
 
 # ============================================================================
 # AWS e ferramentas
 # ============================================================================
 
-# Check current AWS identity [alias: sts]
+# Check current AWS identity [alias: sts, check]
 @aws-check:
     aws sts get-caller-identity
 
@@ -43,7 +47,7 @@ alias refresh := tf-refresh
 @tf-apply:
     terraform apply plan
 
-# Create a destroy plan and apply it [alias: destroy-terraform]
+# Create a destroy plan and apply it [alias: destroy]
 @tf-destroy *var:
     terraform plan -destroy -out destroy {{ var }}
     just _tf-destroy
@@ -57,7 +61,7 @@ alias refresh := tf-refresh
 @tf-lint:
     terraform fmt -write=true -recursive
 
-# Validate terraform configuration [alias: validate]
+# Validate terraform configuration [alias: validate, check]
 @tf-check:
     terraform validate
 
@@ -67,11 +71,11 @@ alias refresh := tf-refresh
 
 # Terraform state management
 
-# Show terraform state [alias: show-state]
+# Show terraform state [alias: show]
 @tf-show:
     terraform show
 
-# List terraform state resources [alias: list-state]
+# List terraform state resources [alias: list]
 @tf-list:
     terraform state list
 
