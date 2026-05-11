@@ -109,3 +109,9 @@ variable "snapshot_identifier" {
   type        = string
   default     = null
 }
+
+variable "license_model" {
+  description = "License model for the DB instance"
+  type        = string
+  default     = null
+}

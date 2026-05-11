@@ -20,4 +20,5 @@ resource "aws_db_instance" "rds" {
   vpc_security_group_ids      = var.vpc_security_group_ids
   tags                        = var.tags
   snapshot_identifier         = var.snapshot_identifier
+  license_model               = var.license_model
 }
