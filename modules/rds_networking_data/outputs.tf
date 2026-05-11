@@ -30,7 +30,7 @@ output "security_group_names" {
 
 output "security_groups_by_name" {
   description = "Map of security group names to their IDs"
-  value       = var.enabled ? { for name, sg in data.aws_security_group.security_groups : name => sg.id } : {}
+  value       = var.enabled ? { for sg in data.aws_security_group.security_groups : sg.group_name => sg.id } : {}
 }
 
 output "enabled" {
