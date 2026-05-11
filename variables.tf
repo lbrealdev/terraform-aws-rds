@@ -146,3 +146,9 @@ variable "rollback_apply_immediately" {
   type        = bool
   default     = true
 }
+
+variable "license_model" {
+  description = "License model for the DB instance (e.g., license-included, bring-your-own-license)"
+  type        = string
+  default     = null
+}
