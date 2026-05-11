@@ -7,7 +7,7 @@ alias t := mise-tools
 alias sts := aws-check
 
 # Simple aliases for Terraform recipes
-alias p := tf-plan
+alias plan := tf-plan
 alias apply := tf-apply
 alias destroy := tf-destroy
 alias fmt := tf-lint
