@@ -18,7 +18,4 @@ data "aws_security_group" "security_groups" {
   }
 }
 
-|# Find VPC ID if not provided (for error messages)
-data "aws_vpc" "current" {
-  count = var.enabled && var.vpc_id != null && length(var.security_group_names) > 0 ? 0 : 1
-}
+|# VPC ID is required for security group lookups via filters
