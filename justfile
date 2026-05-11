@@ -36,7 +36,7 @@ alias refresh := tf-refresh
 
 # Initialize terraform (download providers, modules, and initialize backend)
 @tf-init *var:
-    terraform init
+    terraform init {{ var }}
 
 # Create a plan and save it to a file
 @tf-plan *var:
@@ -44,7 +44,7 @@ alias refresh := tf-refresh
 
 # Apply the saved plan
 @tf-apply *var:
-    terraform apply plan
+    terraform apply plan {{ var }}
 
 # Create a destroy plan and apply it
 @tf-destroy *var:
