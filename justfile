@@ -1,12 +1,12 @@
 set dotenv-load := true
 
 # ============================================================================
-# Aliases principais
+# Primary aliases
 # ============================================================================
 alias t := mise-tools
 alias sts := aws-check
 
-# Simple aliases for terraform recipes
+# Simple aliases for Terraform recipes
 alias p := tf-plan
 alias apply := tf-apply
 alias destroy := tf-destroy
@@ -19,19 +19,19 @@ alias show := tf-show
 alias refresh := tf-refresh
 
 # ============================================================================
-# AWS e ferramentas
+# AWS & tooling
 # ============================================================================
 
 # Check current AWS identity
 @aws-check:
     aws sts get-caller-identity
 
-# List mise tools installed in current directory
+# List mise tools installed in the current directory
 @mise-tools:
     mise ls --json | jq -r --arg pwd "$(pwd)" 'to_entries[] | select(.value[].source.path != null and (.value[].source.path | contains($pwd))) | .key'
 
 # ============================================================================
-# Terraform Recipes
+# Terraform recipes
 # ============================================================================
 
 # Initialize terraform (download providers, modules, and initialize backend)
@@ -51,12 +51,12 @@ alias refresh := tf-refresh
     terraform plan -destroy -out destroy {{ var }}
     just _tf-destroy
 
-# Prompt de confirmação para destroy
+# Confirmation prompt for destroy
 [confirm("Are you sure you want to destroy all Terraform resources? This action cannot be undone.")]
 @_tf-destroy:
     terraform apply destroy
 
-# Format terraform files (write changes in place)
+# Format Terraform files (write changes in place)
 @tf-lint:
     terraform fmt -write=true -recursive
 
@@ -64,7 +64,7 @@ alias refresh := tf-refresh
 @tf-check:
     terraform validate
 
-# Generate/update terraform documentation
+# Generate/update Terraform documentation
 @tf-docs:
     terraform-docs markdown table --output-file=README.md --output-mode=replace .
 
