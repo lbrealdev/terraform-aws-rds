@@ -1,17 +1,16 @@
 # terraform-aws-rds
 
-Terraform module stack for deploying AWS RDS with support for **zero-downtime upgrades** patterns and **rollback capabilities**.
+Terraform module stack for deploying AWS RDS with support for **zero-downtime upgrade patterns** and **rollback capabilities**.
 
-## Modules
-
-- **rds_settings**: DB parameter groups + option groups (stable naming across engine versions)
-- **rds_instance**: creates the RDS DB instance
-- **rds_networking_data**: optionally looks up existing DB subnet group + security groups
-- **rds_rollback**: creates an instance from a snapshot for rollback scenarios
+> **Quick navigation**
+> - [Quickstart](#quickstart)
+> - [Configuration (root module)](#configuration-root-module)
+> - [Modules](#modules)
+> - [Upgrade & rollback](#upgrade--rollback)
+> - [References](#references)
+> - [Contributing](#contributing)
 
 ## Quickstart
-
-> Adjust variables and examples below to your engine/version.
 
 1) Configure required variables (see `variables.tf`)
 2) Run:
@@ -39,17 +38,26 @@ Rollback controls:
 - `rollback_snapshot_identifier`
 - `rollback_identifier`
 
-## Upgrade & rollback docs
+## Modules
 
-See the detailed guides in `docs/`:
+- **rds_settings**: DB parameter groups + option groups (stable naming across engine versions)
+- **rds_instance**: creates the RDS DB instance
+- **rds_networking_data**: optionally looks up existing DB subnet group + security groups
+- **rds_rollback**: creates an instance from a snapshot for rollback scenarios
+
+## Upgrade & rollback
+
+Detailed guides live in `docs/`:
 - [Rollback strategy (snapshot-based)](./docs/rollbacks-snapshot-strategy.md)
 - [RDS parameter/option reference](./docs/rds-options-reference.md)
 
-## Documentation structure
+## References
 
-- Root `README.md`: entry point / overview
-- `docs/`: detailed guides, references, and examples
-- `modules/*/README.md`: module-specific behavior and outputs
+- Module READMEs (more operational details):
+  - `modules/rds_settings/README.md`
+  - `modules/rds_instance/README.md`
+  - `modules/rds_networking_data/README.md`
+  - `modules/rds_rollback/README.md`
 
 ## Contributing
 
