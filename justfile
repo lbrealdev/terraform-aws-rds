@@ -1,84 +1,83 @@
 set dotenv-load := true
 
 # ============================================================================
-# Aliases principais
+# Primary aliases
 # ============================================================================
 alias t := mise-tools
 alias sts := aws-check
 
-# Simple aliases for terraform recipes
-alias check := aws-check      # tf-check alias
-alias p := tf-plan             # tf-plan alias
-alias apply := tf-apply        # tf-apply alias
-alias destroy := tf-destroy    # tf-destroy alias
-alias fmt := tf-lint           # tf-lint alias
-alias validate := tf-check     # tf-check alias
-alias docs := tf-docs          # tf-docs alias
-alias init := tf-init          # tf-init alias
-alias list := tf-list          # tf-list alias
-alias show := tf-show          # tf-show alias
-alias refresh := tf-refresh    # tf-refresh alias
+# Simple aliases for Terraform recipes
+alias plan := tf-plan
+alias apply := tf-apply
+alias destroy := tf-destroy
+alias fmt := tf-lint
+alias validate := tf-check
+alias docs := tf-docs
+alias init := tf-init
+alias list := tf-list
+alias show := tf-show
+alias refresh := tf-refresh
 
 # ============================================================================
-# AWS e ferramentas
+# AWS & tooling
 # ============================================================================
 
-# Check current AWS identity [alias: sts, check]
+# Check current AWS identity
 @aws-check:
     aws sts get-caller-identity
 
-# List mise tools installed in current directory [alias: t]
+# List mise tools installed in the current directory
 @mise-tools:
     mise ls --json | jq -r --arg pwd "$(pwd)" 'to_entries[] | select(.value[].source.path != null and (.value[].source.path | contains($pwd))) | .key'
 
 # ============================================================================
-# Terraform Recipes
+# Terraform recipes
 # ============================================================================
 
-# Initialize terraform (download providers, modules, and initialize backend) [alias: init]
-@tf-init:
-    terraform init
+# Initialize Terraform (providers/modules/backend)
+@tf-init *var:
+    terraform init {{ var }}
 
-# Create a plan and save it to a file [alias: p, plan]
+# Create a plan and save it to a file
 @tf-plan *var:
     terraform plan -out plan {{ var }}
 
-# Apply the saved plan [alias: apply]
-@tf-apply:
-    terraform apply plan
+# Apply the saved plan
+@tf-apply *var:
+    terraform apply plan {{ var }}
 
-# Create a destroy plan and apply it [alias: destroy]
+# Create a destroy plan and apply it
 @tf-destroy *var:
     terraform plan -destroy -out destroy {{ var }}
     just _tf-destroy
 
-# Prompt de confirmação para destroy
+# Confirmation prompt for destroy
 [confirm("Are you sure you want to destroy all Terraform resources? This action cannot be undone.")]
 @_tf-destroy:
     terraform apply destroy
 
-# Format terraform files (write changes in place) [alias: fmt]
+# Format Terraform files (write changes in place)
 @tf-lint:
     terraform fmt -write=true -recursive
 
-# Validate terraform configuration [alias: validate, check]
+# Validate terraform configuration
 @tf-check:
     terraform validate
 
-# Generate/update terraform documentation [alias: docs]
+# Generate/update Terraform documentation
 @tf-docs:
     terraform-docs markdown table --output-file=README.md --output-mode=replace .
 
 # Terraform state management
 
-# Show terraform state [alias: show]
+# Show terraform state
 @tf-show:
     terraform show
 
-# List terraform state resources [alias: list]
+# List terraform state resources
 @tf-list:
     terraform state list
 
-# Refresh terraform state [alias: refresh]
+# Refresh terraform state
 @tf-refresh:
     terraform refresh
