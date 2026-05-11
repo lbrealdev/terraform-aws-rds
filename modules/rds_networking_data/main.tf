@@ -8,8 +8,14 @@ data "aws_db_subnet_group" "subnet_group" {
 data "aws_security_group" "security_groups" {
   for_each = var.enabled && length(var.security_group_names) > 0 ? toset(var.security_group_names) : []
 
-  name   = each.value
-  vpc_id = var.vpc_id != null ? var.vpc_id : null
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+  filter {
+    name   = "group-name"
+    values = [each.value]
+  }
 }
 
 |# Find VPC ID if not provided (for error messages)
