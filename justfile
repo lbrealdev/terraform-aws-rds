@@ -34,19 +34,19 @@ alias refresh := tf-refresh
 # Terraform Recipes
 # ============================================================================
 
-# Initialize terraform (download providers, modules, and initialize backend) [alias: init]
+# Initialize terraform (download providers, modules, and initialize backend)
 @tf-init:
     terraform init
 
-# Create a plan and save it to a file [alias: p, plan]
+# Create a plan and save it to a file
 @tf-plan *var:
     terraform plan -out plan {{ var }}
 
-# Apply the saved plan [alias: apply]
+# Apply the saved plan
 @tf-apply:
     terraform apply plan
 
-# Create a destroy plan and apply it [alias: destroy]
+# Create a destroy plan and apply it
 @tf-destroy *var:
     terraform plan -destroy -out destroy {{ var }}
     just _tf-destroy
@@ -56,28 +56,28 @@ alias refresh := tf-refresh
 @_tf-destroy:
     terraform apply destroy
 
-# Format terraform files (write changes in place) [alias: fmt]
+# Format terraform files (write changes in place)
 @tf-lint:
     terraform fmt -write=true -recursive
 
-# Validate terraform configuration [alias: validate, check]
+# Validate terraform configuration
 @tf-check:
     terraform validate
 
-# Generate/update terraform documentation [alias: docs]
+# Generate/update terraform documentation
 @tf-docs:
     terraform-docs markdown table --output-file=README.md --output-mode=replace .
 
 # Terraform state management
 
-# Show terraform state [alias: show]
+# Show terraform state
 @tf-show:
     terraform show
 
-# List terraform state resources [alias: list]
+# List terraform state resources
 @tf-list:
     terraform state list
 
-# Refresh terraform state [alias: refresh]
+# Refresh terraform state
 @tf-refresh:
     terraform refresh
