@@ -1,18 +1,19 @@
-|# Fetch existing DB Subnet Group
+# Fetch existing DB Subnet Group
 data "aws_db_subnet_group" "subnet_group" {
   count = var.enabled && var.db_subnet_group_name != null ? 1 : 0
   name  = var.db_subnet_group_name
 }
 
-|# Fetch existing Security Groups by name
+# Fetch existing Security Groups by name
 data "aws_security_group" "security_groups" {
   for_each = var.enabled && length(var.security_group_names) > 0 ? toset(var.security_group_names) : []
 
-  name   = each.value
-  vpc_id = var.vpc_id != null ? var.vpc_id : null
-}
-
-|# Find VPC ID if not provided (for error messages)
-data "aws_vpc" "current" {
-  count = var.enabled && var.vpc_id != null && length(var.security_group_names) > 0 ? 0 : 1
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+  filter {
+    name   = "group-name"
+    values = [each.value]
+  }
 }
