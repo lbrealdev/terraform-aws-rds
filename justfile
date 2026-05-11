@@ -7,27 +7,26 @@ alias t := mise-tools
 alias sts := aws-check
 
 # Simple aliases for terraform recipes
-
-alias p := tf-plan             # tf-plan alias
-alias apply := tf-apply        # tf-apply alias
-alias destroy := tf-destroy    # tf-destroy alias
-alias fmt := tf-lint           # tf-lint alias
-alias validate := tf-check     # tf-check alias
-alias docs := tf-docs          # tf-docs alias
-alias init := tf-init          # tf-init alias
-alias list := tf-list          # tf-list alias
-alias show := tf-show          # tf-show alias
-alias refresh := tf-refresh    # tf-refresh alias
+alias p := tf-plan
+alias apply := tf-apply
+alias destroy := tf-destroy
+alias fmt := tf-lint
+alias validate := tf-check
+alias docs := tf-docs
+alias init := tf-init
+alias list := tf-list
+alias show := tf-show
+alias refresh := tf-refresh
 
 # ============================================================================
 # AWS e ferramentas
 # ============================================================================
 
-# Check current AWS identity [alias: sts, check]
+# Check current AWS identity
 @aws-check:
     aws sts get-caller-identity
 
-# List mise tools installed in current directory [alias: t]
+# List mise tools installed in current directory
 @mise-tools:
     mise ls --json | jq -r --arg pwd "$(pwd)" 'to_entries[] | select(.value[].source.path != null and (.value[].source.path | contains($pwd))) | .key'
 
