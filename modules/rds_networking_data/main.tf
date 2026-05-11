@@ -17,5 +17,3 @@ data "aws_security_group" "security_groups" {
     values = [each.value]
   }
 }
-
-# VPC ID is required for security group lookups via filters
