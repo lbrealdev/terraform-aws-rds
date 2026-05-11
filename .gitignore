@@ -52,5 +52,8 @@ pip-delete-this-directory.txt
 .DS_Store
 Thumbs.db
 
+# Hermes (local planning artifacts)
+.hermes/
+
 # Environment
 .env
