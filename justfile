@@ -34,7 +34,7 @@ alias refresh := tf-refresh
 # Terraform recipes
 # ============================================================================
 
-# Initialize terraform (download providers, modules, and initialize backend)
+# Terraform init
 @tf-init *var:
     terraform init {{ var }}
 
