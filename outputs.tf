@@ -30,3 +30,28 @@ output "rds_settings_map" {
     }
   }
 }
+
+output "db_subnet_group_name" {
+  description = "Name of the DB subnet group used by RDS instances"
+  value       = module.rds_networking_data.db_subnet_group_name
+}
+
+output "db_subnet_group_subnets" {
+  description = "List of subnet IDs in the DB subnet group"
+  value       = module.rds_networking_data.db_subnet_group_subnets
+}
+
+output "security_group_ids" {
+  description = "List of security group IDs associated with the RDS instances"
+  value       = module.rds_networking_data.security_group_ids
+}
+
+output "security_group_names" {
+  description = "List of security group names associated with the RDS instances"
+  value       = module.rds_networking_data.security_group_names
+}
+
+output "security_groups_by_name" {
+  description = "Map of security group names to their IDs"
+  value       = module.rds_networking_data.security_groups_by_name
+}
