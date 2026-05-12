@@ -22,8 +22,8 @@ db_skip_final_snapshot         = false
 license_model                  = "license-included"
 
 # Domain Integration (SQL Server EE / Windows Authentication via AWS Directory Service)
-# domain               = "corp.example.com"
-# domain_iam_role_name = "rds-ad-domain-join-role"
+domain               = "corp.example.com"
+domain_iam_role_name = "rds-ad-domain-join-role"
 
 # Rollback Configuration
 rollback_enabled                   = false
