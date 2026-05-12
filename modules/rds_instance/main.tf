@@ -21,4 +21,6 @@ resource "aws_db_instance" "rds" {
   tags                        = var.tags
   snapshot_identifier         = var.snapshot_identifier
   license_model               = var.license_model
+  domain                      = var.domain
+  domain_iam_role_name        = var.domain_iam_role_name
 }

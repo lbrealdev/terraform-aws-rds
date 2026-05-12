@@ -55,10 +55,12 @@ module "rds_instance" {
   auto_minor_version_upgrade  = var.db_auto_minor_version_upgrade
   skip_final_snapshot         = var.db_skip_final_snapshot
 
-  username          = var.db_username
-  password          = var.db_password
-  allocated_storage = var.db_allocated_storage
-  license_model     = var.license_model
+  username             = var.db_username
+  password             = var.db_password
+  allocated_storage    = var.db_allocated_storage
+  license_model        = var.license_model
+  domain               = var.domain
+  domain_iam_role_name = var.domain_iam_role_name
 }
 
 module "rds_rollback" {
