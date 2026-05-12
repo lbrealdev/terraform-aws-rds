@@ -115,3 +115,17 @@ variable "license_model" {
   type        = string
   default     = null
 }
+
+# SQL Server Domain Integration (Windows Authentication via AWS Directory Service)
+
+variable "domain" {
+  description = "The Active Directory domain (DNS name) for SQL Server Windows Authentication via AWS Directory Service. Only supported for sqlserver-ee engine."
+  type        = string
+  default     = null
+}
+
+variable "domain_iam_role_name" {
+  description = "The name of the IAM role that RDS uses to join the Active Directory domain. Required when domain is specified."
+  type        = string
+  default     = null
+}

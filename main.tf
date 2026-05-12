@@ -59,6 +59,8 @@ module "rds_instance" {
   password          = var.db_password
   allocated_storage = var.db_allocated_storage
   license_model     = var.license_model
+  domain            = var.domain
+  domain_iam_role_name = var.domain_iam_role_name
 }
 
 module "rds_rollback" {
