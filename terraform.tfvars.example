@@ -21,6 +21,10 @@ db_auto_minor_version_upgrade  = true
 db_skip_final_snapshot         = false
 license_model                  = "license-included"
 
+# Domain Integration (SQL Server EE / Windows Authentication via AWS Directory Service)
+# domain               = "corp.example.com"
+# domain_iam_role_name = "rds-ad-domain-join-role"
+
 # Rollback Configuration
 rollback_enabled                   = false
 rollback_snapshot_identifier       = "rds:mydb-2024-03-18-14-30"
