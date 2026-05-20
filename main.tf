@@ -58,6 +58,9 @@ module "rds_instance" {
   username             = var.db_username
   password             = var.db_password
   allocated_storage    = var.db_allocated_storage
+  storage_type         = var.db_instance_storage_type
+  storage_throughput   = var.db_instance_storage_throughput
+  iops                 = var.db_instance_iops
   license_model        = var.license_model
   domain               = var.domain
   domain_iam_role_name = var.domain_iam_role_name
