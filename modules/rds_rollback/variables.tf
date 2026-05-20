@@ -129,3 +129,25 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "storage_throughput" {
+  description = "Throughput (mebibytes per second) for gp3 storage. Required when storage_type is 'gp3', value must be between 125 and 1000"
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.storage_throughput == null || (var.storage_type == "gp3" && var.storage_throughput >= 125 && var.storage_throughput <= 1000)
+    error_message = "storage_throughput for gp3 must be between 125 and 1000. Set to null if not using gp3."
+  }
+}
+
+variable "iops" {
+  description = "Provisioned IOPS (I/O operations per second). Required when storage_type is 'io1' or 'io2', value must be between 1,000 and 64,000"
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.iops == null || (contains(["io1", "io2"], var.storage_type) && var.iops >= 1000 && var.iops <= 64000)
+    error_message = "iops for io1/io2 must be between 1,000 and 64,000. Set to null if not using io1/io2."
+  }
+}

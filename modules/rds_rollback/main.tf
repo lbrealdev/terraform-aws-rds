@@ -1,11 +1,6 @@
-module "rds_instance" {
-  source = "../rds_instance"
-
+resource "aws_db_instance" "rds" {
   count = var.enabled ? 1 : 0
 
-  enabled = var.enabled
-
-  # Pass through all variables to rds_instance
   identifier                  = var.identifier
   engine                      = var.engine
   engine_version              = var.engine_version
@@ -14,6 +9,8 @@ module "rds_instance" {
   password                    = var.password
   allocated_storage           = var.allocated_storage
   storage_type                = var.storage_type
+  storage_throughput          = var.storage_throughput
+  iops                        = var.iops
   skip_final_snapshot         = var.skip_final_snapshot
   final_snapshot_identifier   = var.final_snapshot_identifier
   option_group_name           = var.option_group_name
@@ -25,15 +22,7 @@ module "rds_instance" {
   vpc_security_group_ids      = var.vpc_security_group_ids
   tags                        = var.tags
   snapshot_identifier         = var.snapshot_identifier
-}
-
-# Stop the source instance after rollback is created
-resource "aws_rds_instance_state" "stop_source" {
-  count = var.enabled && var.stop_source_instance ? 1 : 0
-
-  identifier = var.source_instance_id
-  state      = "stopped"
-
-  # Ensures this runs AFTER rollback instance is ready
-  depends_on = [module.rds_instance]
+  license_model               = var.license_model
+  domain                      = var.domain
+  domain_iam_role_name        = var.domain_iam_role_name
 }
