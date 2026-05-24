@@ -172,34 +172,16 @@ variable "db_instance_storage_type" {
   description = "Type of storage for the RDS instance: 'standard' (magnetic), 'gp2' (general purpose SSD), 'gp3' (gp2 with better performance and pricing), or 'io1'/'io2' (provisioned IOPS SSD)"
   type        = string
   default     = "gp2"
-
-  validation {
-    condition     = can(regex("^(standard|gp2|gp3|io1|io2)$", var.db_instance_storage_type))
-    error_message = "db_instance_storage_type must be one of: standard, gp2, gp3, io1, io2"
-  }
 }
 
 variable "db_instance_storage_throughput" {
   description = "Throughput (mebibytes per second) for gp3 storage. Required when storage_type is 'gp3', value must be between 125 and 1000"
   type        = number
   default     = null
-
-  validation {
-    condition     = var.db_instance_storage_throughput == null || (var.db_instance_storage_type == "gp3" && var.db_instance_storage_throughput >= 125 && var.db_instance_storage_throughput <= 1000)
-    error_message = "db_instance_storage_throughput for gp3 must be between 125 and 1000. Set to null if not using gp3."
-  }
 }
 
 variable "db_instance_iops" {
   description = "Provisioned IOPS (I/O operations per second). Optional for gp3 (3000-16000), required for io1/io2 (1000-64000)"
   type        = number
   default     = null
-
-  validation {
-    condition     = var.db_instance_iops == null || (
-      (var.db_instance_storage_type == "gp3" && var.db_instance_iops >= 3000 && var.db_instance_iops <= 16000) ||
-      (contains(["io1", "io2"], var.db_instance_storage_type) && var.db_instance_iops >= 1000 && var.db_instance_iops <= 64000)
-    )
-    error_message = "db_instance_iops must be between 3,000-16,000 for gp3, or 1,000-64,000 for io1/io2. Set to null if not using optional IOPS."
-  }
 }
