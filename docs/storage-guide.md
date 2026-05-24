@@ -241,6 +241,9 @@ A: Yes, storage type changes are applied during the maintenance window. Use `db_
 **Q: What happens if I don't set IOPS for GP3?**
 A: GP3 uses baseline IOPS (3,000) if `db_instance_iops` is `null`.
 
+**Q: What happens if I don't set throughput for GP3?**
+A: GP3 uses baseline throughput (125 MB/s) if `db_instance_storage_throughput` is `null`. This is the default value when not specified.
+
 **Q: Is GP3 always cheaper than GP2?**
 A: For most cases, yes (~20% cheaper). However, if you provision high IOPS/throughput on GP3, cost may exceed GP2.
 
