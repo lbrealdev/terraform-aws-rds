@@ -191,12 +191,15 @@ variable "db_instance_storage_throughput" {
 }
 
 variable "db_instance_iops" {
-  description = "Provisioned IOPS (I/O operations per second). Required when storage_type is 'io1' or 'io2', value must be between 1,000 and 64,000"
+  description = "Provisioned IOPS (I/O operations per second). Optional for gp3 (3000-16000), required for io1/io2 (1000-64000)"
   type        = number
   default     = null
 
   validation {
-    condition     = var.db_instance_iops == null || (contains(["io1", "io2"], var.db_instance_storage_type) && var.db_instance_iops >= 1000 && var.db_instance_iops <= 64000)
-    error_message = "db_instance_iops for io1/io2 must be between 1,000 and 64,000. Set to null if not using io1/io2."
+    condition     = var.db_instance_iops == null || (
+      (var.db_instance_storage_type == "gp3" && var.db_instance_iops >= 3000 && var.db_instance_iops <= 16000) ||
+      (contains(["io1", "io2"], var.db_instance_storage_type) && var.db_instance_iops >= 1000 && var.db_instance_iops <= 64000)
+    )
+    error_message = "db_instance_iops must be between 3,000-16,000 for gp3, or 1,000-64,000 for io1/io2. Set to null if not using optional IOPS."
   }
 }

@@ -65,9 +65,14 @@ variable "allocated_storage" {
 }
 
 variable "storage_type" {
-  description = "Storage type - not required when using snapshot_identifier (inherited from snapshot)"
+  description = "Storage type: standard (magnetic), gp2 (general purpose SSD), gp3 (gp2 with better performance and pricing), io1/io2 (provisioned IOPS SSD) - not required when using snapshot_identifier (inherited from snapshot)"
   type        = string
   default     = null
+
+  validation {
+    condition     = var.storage_type == null || can(regex("^(standard|gp2|gp3|io1|io2)$", var.storage_type))
+    error_message = "storage_type must be one of: standard, gp2, gp3, io1, io2"
+  }
 }
 
 variable "skip_final_snapshot" {
@@ -142,12 +147,15 @@ variable "storage_throughput" {
 }
 
 variable "iops" {
-  description = "Provisioned IOPS (I/O operations per second). Required when storage_type is 'io1' or 'io2', value must be between 1,000 and 64,000"
+  description = "Provisioned IOPS (I/O operations per second). Optional for gp3 (3000-16000), required for io1/io2 (1000-64000)"
   type        = number
   default     = null
 
   validation {
-    condition     = var.iops == null || (contains(["io1", "io2"], var.storage_type) && var.iops >= 1000 && var.iops <= 64000)
-    error_message = "iops for io1/io2 must be between 1,000 and 64,000. Set to null if not using io1/io2."
+    condition     = var.iops == null || (
+      (var.storage_type == "gp3" && var.iops >= 3000 && var.iops <= 16000) ||
+      (contains(["io1", "io2"], var.storage_type) && var.iops >= 1000 && var.iops <= 64000)
+    )
+    error_message = "iops must be between 3,000-16,000 for gp3, or 1,000-64,000 for io1/io2. Set to null if not using optional IOPS."
   }
 }

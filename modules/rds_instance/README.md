@@ -23,11 +23,69 @@ module "rds_instance" {
   db_subnet_group_name   = "my-db-subnet-group"
   vpc_security_group_ids = ["sg-12345678"]
 
-  # Storage
+  # Storage (default gp2)
   allocated_storage = 20
   storage_type      = "gp2"
 }
 ```
+
+### GP3 Storage Configuration (Recommended)
+
+GP3 provides better price-performance ratio with tunable IOPS and throughput.
+
+```hcl
+module "rds_instance" {
+  source = "./modules/rds_instance"
+
+  enabled       = true
+  identifier     = "my-app-db"
+  engine         = "sqlserver-web"
+  engine_version = "16.00"
+  instance_class = "db.t3.micro"
+  username       = "admin"
+  password       = var.db_password
+
+  # Networking
+  db_subnet_group_name   = "my-db-subnet-group"
+  vpc_security_group_ids = ["sg-12345678"]
+
+  # Storage (gp3 with tunable performance)
+  allocated_storage     = 100
+  storage_type          = "gp3"
+  storage_throughput    = 300  # 125-1000 MB/s
+  iops                  = 3000 # 3000-16000 (optional, uses baseline if null)
+}
+```
+
+### IO1 High-Performance Storage
+
+For IOPS-intensive workloads requiring consistent low latency.
+
+```hcl
+module "rds_instance" {
+  source = "./modules/rds_instance"
+
+  enabled       = true
+  identifier     = "my-app-db"
+  engine         = "sqlserver-web"
+  engine_version = "16.00"
+  instance_class = "db.t3.medium"
+  username       = "admin"
+  password       = var.db_password
+
+  # Networking
+  db_subnet_group_name   = "my-db-subnet-group"
+  vpc_security_group_ids = ["sg-12345678"]
+
+  # Storage (io1 for high IOPS workloads)
+  allocated_storage = 200
+  storage_type      = "io1"
+  iops              = 5000 # 1000-64000
+}
+```
+
+> [!TIP]
+> See [Storage Guide](../../docs/storage-guide.md) for detailed comparison, migration strategies, and cost optimization.
 
 ### Usage with RDS Settings Module
 
@@ -71,7 +129,11 @@ module "rds_instance" {
 
   # Storage
   allocated_storage = 100
-  storage_type      = "gp2"
+  storage_type      = "gp3" # Recommended: better price-performance ratio
+
+  # Optional GP3 tuning (see docs/storage-guide.md)
+  storage_throughput = 300  # 125-1000 MB/s
+  iops               = 3000 # 3000-16000 (optional)
 
   # Maintenance settings
   skip_final_snapshot = true
@@ -110,8 +172,10 @@ module "rds_instance" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `allocated_storage` | The allocated storage in gigabytes | `number` | `100` |
-| `storage_type` | Storage type: 'standard', 'gp2', or 'io1' | `string` | `"gp2"` |
+|| `allocated_storage` | The allocated storage in gigabytes | `number` | `100` ||
+|| `storage_type` | Storage type: standard, gp2 (default), gp3, io1, io2 | `string` | `"gp2"` ||
+|| `storage_throughput` | Throughput for gp3 (125-1000 MB/s) | `number` | `null` ||
+|| `iops` | Provisioned IOPS for io1/io2 (1000-64000) | `number` | `null` ||
 | `skip_final_snapshot` | Skip final snapshot before deletion | `bool` | `true` |
 | `vpc_security_group_ids` | List of VPC security groups to associate | `list(string)` | `[]` |
 | `option_group_name` | Name of the DB option group to associate | `string` | `null` |
