@@ -63,21 +63,21 @@ module "rds_instance" {
 
 Key variables available in the root stack:
 
-|| Section | Variable | Description ||
-||---------|----------|-------------||
-|| **Networking** | `vpc_id` | VPC ID where resources are deployed ||
-|| **Networking** | `db_subnet_group_name` | Name of the DB subnet group ||
-|| **Networking** | `security_group_names` | List of VPC security group names ||
-|| **Database** | `db_username` | Master database username ||
-|| **Database** | `db_password` | Master database password ||
-|| **Database** | `rds_engine_version` | Target engine version (e.g. full version to pin) ||
-|| **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) ||
-|| **Database** | `db_allocated_storage` | Allocated storage in gigabytes ||
-|| **Storage** | `db_instance_storage_type` | Storage type: gp2 (default), gp3, io1, io2, standard ||
-|| **Storage** | `db_instance_storage_throughput` | Throughput for gp3 (125-1000 MB/s) ||
-|| **Storage** | `db_instance_iops` | Provisioned IOPS for io1/io2 (1000-64000) ||
-|| **Rollback** | `rollback_enabled` | Enable/disable rollback instance ||
-|| **Rollback** | `rollback_snapshot_identifier` | Source snapshot for rollback ||
+| Section | Variable | Description |
+|---------|----------|-------------|
+| **Networking** | `vpc_id` | VPC ID where resources are deployed |
+| **Networking** | `db_subnet_group_name` | Name of the DB subnet group |
+| **Networking** | `security_group_names` | List of VPC security group names |
+| **Database** | `db_username` | Master database username |
+| **Database** | `db_password` | Master database password |
+| **Database** | `rds_engine_version` | Target engine version (e.g. full version to pin) |
+| **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) |
+| **Database** | `db_allocated_storage` | Allocated storage in gigabytes |
+| **Storage** | `db_instance_storage_type` | Storage type: gp2 (default), gp3, io1, io2, standard |
+| **Storage** | `db_instance_storage_throughput` | Throughput for gp3 (125-1000 MB/s) |
+| **Storage** | `db_instance_iops` | Provisioned IOPS for io1/io2 (1000-64000) |
+| **Rollback** | `rollback_enabled` | Enable/disable rollback instance |
+| **Rollback** | `rollback_snapshot_identifier` | Source snapshot for rollback |
 
 > [!TIP]
 > For a full list of variables, see `variables.tf`.

@@ -172,10 +172,10 @@ module "rds_instance" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-|| `allocated_storage` | The allocated storage in gigabytes | `number` | `100` ||
-|| `storage_type` | Storage type: standard, gp2 (default), gp3, io1, io2 | `string` | `"gp2"` ||
-|| `storage_throughput` | Throughput for gp3 (125-1000 MB/s) | `number` | `null` ||
-|| `iops` | Provisioned IOPS for io1/io2 (1000-64000) | `number` | `null` ||
+| `allocated_storage` | The allocated storage in gigabytes | `number` | `100` |
+| `storage_type` | Storage type: standard, gp2 (default), gp3, io1, io2 | `string` | `"gp2"` |
+| `storage_throughput` | Throughput for gp3 (125-1000 MB/s) | `number` | `null` |
+| `iops` | Provisioned IOPS for io1/io2 (1000-64000) | `number` | `null` |
 | `skip_final_snapshot` | Skip final snapshot before deletion | `bool` | `true` |
 | `vpc_security_group_ids` | List of VPC security groups to associate | `list(string)` | `[]` |
 | `option_group_name` | Name of the DB option group to associate | `string` | `null` |
