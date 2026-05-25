@@ -159,3 +159,21 @@ variable "iops" {
     error_message = "iops must be between 3,000-16,000 for gp3, or 1,000-64,000 for io1/io2. Set to null if not using optional IOPS."
   }
 }
+
+variable "max_allocated_storage" {
+  description = "Maximum storage (in GiB) that Amazon RDS can automatically scale to. By default, Storage Autoscaling is disabled. Set to a value greater than or equal to allocated_storage to enable it."
+  type        = number
+  default     = null
+}
+
+variable "storage_encrypted" {
+  description = "Specifies whether the DB instance is encrypted. The default is false if not specified."
+  type        = bool
+  default     = null
+}
+
+variable "kms_key_id" {
+  description = "The ARN of the KMS encryption key used to encrypt the DB instance. Required when storage_encrypted is true and a custom key is desired."
+  type        = string
+  default     = null
+}

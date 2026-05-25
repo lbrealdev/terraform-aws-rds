@@ -11,6 +11,9 @@ resource "aws_db_instance" "rds" {
   storage_type                = var.storage_type
   storage_throughput          = var.storage_throughput
   iops                        = var.iops
+  max_allocated_storage       = var.max_allocated_storage
+  storage_encrypted           = var.storage_encrypted
+  kms_key_id                  = var.kms_key_id
   skip_final_snapshot         = var.skip_final_snapshot
   final_snapshot_identifier   = var.final_snapshot_identifier
   option_group_name           = var.option_group_name

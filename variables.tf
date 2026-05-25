@@ -185,3 +185,21 @@ variable "db_instance_iops" {
   type        = number
   default     = null
 }
+
+variable "db_instance_max_allocated_storage" {
+  description = "Maximum storage (in GiB) that Amazon RDS can automatically scale to. By default, Storage Autoscaling is disabled."
+  type        = number
+  default     = null
+}
+
+variable "db_instance_storage_encrypted" {
+  description = "Specifies whether the DB instance is encrypted. The default is false if not specified."
+  type        = bool
+  default     = null
+}
+
+variable "db_instance_kms_key_id" {
+  description = "The ARN of the KMS encryption key used to encrypt the DB instance. Required when storage_encrypted is true and a custom key is desired."
+  type        = string
+  default     = null
+}

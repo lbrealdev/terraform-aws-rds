@@ -66,10 +66,13 @@ module "rds_instance" {
   password = var.db_password
 
   # --- Storage ---
-  allocated_storage  = var.db_allocated_storage
-  storage_type       = var.db_instance_storage_type
-  storage_throughput = var.db_instance_storage_throughput
-  iops               = var.db_instance_iops
+  allocated_storage     = var.db_allocated_storage
+  storage_type          = var.db_instance_storage_type
+  storage_throughput    = var.db_instance_storage_throughput
+  iops                  = var.db_instance_iops
+  max_allocated_storage = var.db_instance_max_allocated_storage
+  storage_encrypted     = var.db_instance_storage_encrypted
+  kms_key_id            = var.db_instance_kms_key_id
 
   # --- License ---
   license_model = var.license_model
