@@ -16,6 +16,9 @@ db_allocated_storage           = 100
 db_instance_storage_type       = "gp3" # Options: standard, gp2, gp3, io1, io2
 db_instance_storage_throughput = 300  # Required for gp3: 125-1000 MB/s (recommended: 300+)
 db_instance_iops               = null  # Optional for gp3: 3000-16000, Required for io1/io2: 1000-64000
+db_instance_max_allocated_storage = null  # Storage Autoscaling: set >= allocated_storage to enable
+db_instance_storage_encrypted   = false  # Encrypt storage at rest
+db_instance_kms_key_id          = null  # Custom KMS key ARN (required if storage_encrypted = true with custom key)
 db_username                    = "admin"
 db_password                    = "your-secure-password"
 db_apply_immediately           = true
