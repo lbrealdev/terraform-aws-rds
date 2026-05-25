@@ -38,27 +38,46 @@ module "rds_settings" {
 module "rds_instance" {
   source = "./modules/rds_instance"
 
+  # --- Instance ---
   enabled        = var.db_instance_enabled
   identifier     = format("rds-%s-db-instance-test", var.prefix_name)
   instance_class = var.db_instance_class
 
+  # --- Engine ---
   engine         = module.rds_settings["v15"].engine_name
   engine_version = var.rds_engine_version
 
-  option_group_name      = module.rds_settings["v15"].option_group_name
-  parameter_group_name   = module.rds_settings["v15"].parameter_group_name
+  # --- Settings ---
+  option_group_name    = module.rds_settings["v15"].option_group_name
+  parameter_group_name = module.rds_settings["v15"].parameter_group_name
+
+  # --- Network ---
   db_subnet_group_name   = module.rds_networking_data.db_subnet_group_name
   vpc_security_group_ids = module.rds_networking_data.security_group_ids
 
+  # --- Maintenance ---
   apply_immediately           = var.db_apply_immediately
   allow_major_version_upgrade = var.db_allow_major_version_upgrade
   auto_minor_version_upgrade  = var.db_auto_minor_version_upgrade
   skip_final_snapshot         = var.db_skip_final_snapshot
 
-  username             = var.db_username
-  password             = var.db_password
-  allocated_storage    = var.db_allocated_storage
-  license_model        = var.license_model
+  # --- User ---
+  username = var.db_username
+  password = var.db_password
+
+  # --- Storage ---
+  allocated_storage     = var.db_allocated_storage
+  storage_type          = var.db_instance_storage_type
+  storage_throughput    = var.db_instance_storage_throughput
+  iops                  = var.db_instance_iops
+  max_allocated_storage = var.db_instance_max_allocated_storage
+  storage_encrypted     = var.db_instance_storage_encrypted
+  kms_key_id            = var.db_instance_kms_key_id
+
+  # --- License ---
+  license_model = var.license_model
+
+  # --- Domain ---
   domain               = var.domain
   domain_iam_role_name = var.domain_iam_role_name
 }

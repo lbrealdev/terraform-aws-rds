@@ -73,6 +73,9 @@ Key variables available in the root stack:
 | **Database** | `rds_engine_version` | Target engine version (e.g. full version to pin) |
 | **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) |
 | **Database** | `db_allocated_storage` | Allocated storage in gigabytes |
+| **Storage** | `db_instance_storage_type` | Storage type: gp2 (default), gp3, io1, io2, standard |
+| **Storage** | `db_instance_storage_throughput` | Throughput for gp3 (125-1000 MB/s) |
+| **Storage** | `db_instance_iops` | Provisioned IOPS for io1/io2 (1000-64000) |
 | **Rollback** | `rollback_enabled` | Enable/disable rollback instance |
 | **Rollback** | `rollback_snapshot_identifier` | Source snapshot for rollback |
 
@@ -97,6 +100,7 @@ The stack is distributed across four core modules:
 
 ## Detailed Documentation
 
+- **[Storage Guide](./docs/storage-guide.md)**: RDS storage types, GP2→GP3 migration, performance tuning, and cost optimization
 - **[Rollback Strategy](./docs/rollbacks-snapshot-strategy.md)**: Snapshot-based rollback procedures, best practices, and decision criteria for production.
 - **[RDS Parameter & Option Reference](./docs/rds-options-reference.md)**: Comprehensive table of supported engines, parameter group families, and optional configuration blocks.
 

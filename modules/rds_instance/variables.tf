@@ -40,9 +40,14 @@ variable "allocated_storage" {
 }
 
 variable "storage_type" {
-  description = "One of 'standard' (magnetic), 'gp2' (general purpose SSD), or 'io1' (provisioned IOPS SSD)"
+  description = "Storage type: standard (magnetic), gp2 (general purpose SSD), gp3 (gp2 with better performance and pricing), io1/io2 (provisioned IOPS SSD)"
   type        = string
   default     = "gp2"
+
+  validation {
+    condition     = can(regex("^(standard|gp2|gp3|io1|io2)$", var.storage_type))
+    error_message = "storage_type must be one of: standard, gp2, gp3, io1, io2"
+  }
 }
 
 variable "skip_final_snapshot" {
@@ -126,6 +131,49 @@ variable "domain" {
 
 variable "domain_iam_role_name" {
   description = "The name of the IAM role that RDS uses to join the Active Directory domain. Required when domain is specified."
+  type        = string
+  default     = null
+}
+
+variable "storage_throughput" {
+  description = "Throughput (mebibytes per second) for gp3 storage. Required when storage_type is 'gp3', value must be between 125 and 1000"
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.storage_throughput == null || (var.storage_type == "gp3" && var.storage_throughput >= 125 && var.storage_throughput <= 1000)
+    error_message = "storage_throughput for gp3 must be between 125 and 1000. Set to null if not using gp3."
+  }
+}
+
+variable "iops" {
+  description = "Provisioned IOPS (I/O operations per second). Optional for gp3 (3000-16000), required for io1/io2 (1000-64000)"
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.iops == null || (
+      (var.storage_type == "gp3" && var.iops >= 3000 && var.iops <= 16000) ||
+      (contains(["io1", "io2"], var.storage_type) && var.iops >= 1000 && var.iops <= 64000)
+    )
+    error_message = "iops must be between 3,000-16,000 for gp3, or 1,000-64,000 for io1/io2. Set to null if not using optional IOPS."
+  }
+}
+
+variable "max_allocated_storage" {
+  description = "Maximum storage (in GiB) that Amazon RDS can automatically scale to. By default, Storage Autoscaling is disabled. Set to a value greater than or equal to allocated_storage to enable it."
+  type        = number
+  default     = null
+}
+
+variable "storage_encrypted" {
+  description = "Specifies whether the DB instance is encrypted. The default is false if not specified."
+  type        = bool
+  default     = null
+}
+
+variable "kms_key_id" {
+  description = "The ARN of the KMS encryption key used to encrypt the DB instance. Required when storage_encrypted is true and a custom key is desired."
   type        = string
   default     = null
 }
