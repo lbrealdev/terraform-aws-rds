@@ -14,12 +14,6 @@ Manage tool versions with `mise`: install `mise` first, then configure
 dependencies as needed (from a `mise.toml` or on request). **Do not install or
 change anything without explicit user authorization.**
 
-## Startup / update script
-
-The dependency-refresh step is `terraform init -input=false -upgrade` (the
-environment `install` command). Keep it minimal — do not add system-dependency
-installation here.
-
 ## Verifying the environment
 
 Offline loop (no AWS credentials): `just init` -> `just validate` ->
