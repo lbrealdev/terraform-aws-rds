@@ -4,9 +4,9 @@ Development guide for **`terraform-aws-rds`** — a Terraform module stack for p
 
 ## Prerequisites
 
-Tool versions are managed with [`mise`](https://mise.jdx.dev/): install `mise` first, then provision the toolchain as needed (from a `mise.toml` or on request). **Do not install or change dependencies without explicit authorization.**
-
 Required CLIs: `terraform` (>= 1.0), `just`, `aws` (AWS CLI v2), `terraform-docs`, `jq`.
+
+Tool versions are intended to be managed with [`mise`](https://mise.jdx.dev/): once a `mise.toml` is committed, run `mise install` to provision the toolchain. Until then, install the CLIs directly. **Do not install or change dependencies without explicit authorization.**
 
 ## Commands
 

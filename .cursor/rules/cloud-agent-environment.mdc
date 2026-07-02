@@ -8,12 +8,6 @@ alwaysApply: true
 Environment notes for Cursor Cloud agents in this repository. General
 development guidance lives in the root `AGENTS.md`.
 
-## Toolchain
-
-Manage tool versions with `mise`: install `mise` first, then configure
-dependencies as needed (from a `mise.toml` or on request). **Do not install or
-change anything without explicit user authorization.**
-
 ## Verifying the environment
 
 Offline loop (no AWS credentials): `just init` -> `just validate` ->
