@@ -14,9 +14,6 @@ Manage tool versions with `mise`: install `mise` first, then configure
 dependencies as needed (from a `mise.toml` or on request). **Do not install or
 change anything without explicit user authorization.**
 
-Required CLIs: `terraform` (>= 1.0), `just`, `aws` (AWS CLI v2),
-`terraform-docs`, `jq`.
-
 ## Startup / update script
 
 The dependency-refresh step is `terraform init -input=false -upgrade` (the
