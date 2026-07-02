@@ -108,6 +108,9 @@ The stack is distributed across four core modules:
 
 Contributions are welcome. Please open an issue or submit a Pull Request following the standard repository workflow.
 
+> [!NOTE]
+> See [`AGENTS.md`](./AGENTS.md) for the development guide — environment setup, `just` commands, and local verification.
+
 ## License
 
 MIT

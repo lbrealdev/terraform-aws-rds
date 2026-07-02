@@ -1,26 +1,33 @@
 # AGENTS.md
 
-## Cursor Cloud specific instructions
+Development guide for **`terraform-aws-rds`** — a Terraform module stack for provisioning AWS RDS instances (SQL Server / MySQL / PostgreSQL). This is Infrastructure-as-Code: there is **no application server, frontend, or GUI**; "running" it means executing Terraform workflows. For module usage and the full variable reference, see [`README.md`](./README.md).
 
-This repository is a **Terraform Infrastructure-as-Code module stack** (`terraform-aws-rds`) for provisioning AWS RDS instances. There is **no application server, frontend, or GUI** — "running" it means executing Terraform workflows. The authoritative command list lives in the `justfile` (`just init | fmt | validate | plan | apply | destroy | docs`).
+## Prerequisites
 
-### Tooling
-Installed at the system level (persisted in the VM snapshot): `terraform`, `just`, `aws` (AWS CLI v2), `terraform-docs`, `jq`. The startup update script runs `terraform init -input=false -upgrade` to refresh providers/modules.
+Tool versions are managed with [`mise`](https://mise.jdx.dev/): install `mise` first, then provision the toolchain as needed (from a `mise.toml` or on request). **Do not install or change dependencies without explicit authorization.**
 
-### Offline dev/verification loop (no AWS account needed)
-This is the local/CI verification path and works without credentials:
-- `just init` — `terraform init` (downloads `hashicorp/aws` provider).
-- `just validate` — `terraform validate` (builds + type-checks the whole module graph).
-- `terraform fmt -check -recursive` — lint check. Note: `just fmt` rewrites files in place; two files (`modules/rds_instance/variables.tf`, `modules/rds_rollback/variables.tf`) are currently not `fmt`-clean in the repo.
+Required CLIs: `terraform` (>= 1.0), `just`, `aws` (AWS CLI v2), `terraform-docs`, `jq`.
 
-### Running `plan` / `apply` requires live AWS
-- `just plan` / `just apply` need **real AWS credentials** AND **pre-existing VPC + DB subnet group + security groups** (looked up by name in `modules/rds_networking_data`). They cannot fully run offline.
-- Gotcha: the AWS provider (v6) validates credentials via STS `GetCallerIdentity` **even during `plan`**, so `terraform plan` fails immediately without valid credentials — not just at `apply`.
-- To smoke-test resource planning offline (parameter/option groups only), you can pass `-var 'networking_enabled=false' -var 'db_instance_enabled=false'` and add a temporary `*_override.tf` provider block with `skip_credentials_validation/skip_requesting_account_id/skip_metadata_api_check = true`. This is experimentation only — delete the override before committing (it is not gitignored).
+## Commands
 
-### Required variables (no defaults)
-`vpc_id`, `db_subnet_group_name`, `security_group_names`, `db_username`, `db_password` must be supplied via a `terraform.tfvars` (gitignored; copy from `terraform.tfvars.example`) or `-var` flags.
+All workflows are defined in the [`justfile`](./justfile):
 
-### Notes
-- The `justfile` sets `set dotenv-load := true`, which optionally loads a `.env` (gitignored); it is not required.
-- State is local by default (no remote backend configured); `.terraform/`, `*.tfstate`, `*.tfvars`, and plan files (`plan`, `*.plan`, `destroy`) are gitignored.
+| Command | Action |
+|---------|--------|
+| `just init` | `terraform init` (providers + modules) |
+| `just validate` | validate the configuration |
+| `just fmt` | format `.tf` files in place |
+| `just plan` / `just apply` | plan / apply changes |
+| `just docs` | regenerate README tables via `terraform-docs` |
+
+## Local verification (no AWS account)
+
+`just init`, `just validate`, and `terraform fmt -check -recursive` run fully offline and form the core development loop.
+
+## `plan` / `apply` require live AWS
+
+`just plan` and `just apply` need real AWS credentials **and** a pre-existing VPC, DB subnet group, and security groups (looked up by name). The AWS provider validates credentials via STS **even during `plan`**, so `plan` fails immediately without valid credentials.
+
+## Cursor Cloud agents
+
+Cursor Cloud environment specifics live in the project rule [`.cursor/rules/cloud-agent-environment.mdc`](./.cursor/rules/cloud-agent-environment.mdc).

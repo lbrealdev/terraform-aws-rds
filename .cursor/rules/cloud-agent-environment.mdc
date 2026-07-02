@@ -1,0 +1,33 @@
+---
+description: Cursor Cloud agent environment setup and verification for terraform-aws-rds
+alwaysApply: true
+---
+
+# Cloud Agent Environment
+
+Environment notes for Cursor Cloud agents in this repository. General
+development guidance lives in the root `AGENTS.md`.
+
+## Toolchain
+
+Manage tool versions with `mise`: install `mise` first, then configure
+dependencies as needed (from a `mise.toml` or on request). **Do not install or
+change anything without explicit user authorization.**
+
+Required CLIs: `terraform` (>= 1.0), `just`, `aws` (AWS CLI v2),
+`terraform-docs`, `jq`.
+
+## Startup / update script
+
+The dependency-refresh step is `terraform init -input=false -upgrade` (the
+environment `install` command). Keep it minimal — do not add system-dependency
+installation here.
+
+## Verifying the environment
+
+Offline loop (no AWS credentials): `just init` -> `just validate` ->
+`terraform fmt -check -recursive`.
+
+`just plan` / `just apply` require real AWS credentials plus a pre-existing VPC,
+DB subnet group, and security groups. The AWS provider validates credentials via
+STS even at `plan` time, so `plan` cannot run fully offline.
