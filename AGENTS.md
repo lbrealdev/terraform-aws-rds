@@ -1,33 +1,67 @@
-# AGENTS.md
+# terraform-aws-rds — Development Guide
 
-Development guide for **`terraform-aws-rds`** — a Terraform module stack for provisioning AWS RDS instances (SQL Server / MySQL / PostgreSQL). This is Infrastructure-as-Code: there is **no application server, frontend, or GUI**; "running" it means executing Terraform workflows. For module usage and the full variable reference, see [`README.md`](./README.md).
+## Project
 
-## Prerequisites
+Reusable Terraform module stack for provisioning AWS RDS instances (SQL Server,
+MySQL, PostgreSQL/Aurora) with an emphasis on safe engine upgrades and recovery:
 
-Required CLIs: `terraform` (>= 1.0), `just`, `aws` (AWS CLI v2), `terraform-docs`, `jq`.
+- **Version-stable settings** — parameter/option groups keyed by engine version
+  (`v15`/`v16`/`v17`) so upgrades don't force resource recreation
+- **Snapshot-based rollback** — restore from a snapshot and stop the source
+  instance for post-upgrade recovery
 
-Tool versions are intended to be managed with [`mise`](https://mise.jdx.dev/): once a `mise.toml` is committed, run `mise install` to provision the toolchain. Until then, install the CLIs directly. **Do not install or change dependencies without explicit authorization.**
+Root stack plus four modules: `rds_settings`, `rds_instance`,
+`rds_networking_data`, `rds_rollback`.
+
+## Workflow
+
+Issue → Branch → Implement → PR → Review → Merge to main
+
+## Conventions
+
+### Branches & commits
+
+| Prefix | Branch | Commit |
+|--------|--------|--------|
+| `feat` | `feat/gp3-storage` | `feat(storage): add gp3 support` |
+| `fix` | `fix/subnet-lookup` | `fix: handle missing subnet group` |
+| `docs` | `docs/rollback-guide` | `docs: document rollback strategy` |
+| `refactor` | `refactor/settings` | `refactor: simplify option groups` |
+| `chore` | — | `chore: bump provider version` |
+
+### Rules
+
+- Never commit to `main`
+- Never force-push
+- Never commit secrets, `*.tfvars`, or state files (`*.tfstate`)
+- Use `git` for version control, `gh` for GitHub operations
+
+### Code style
+
+- Terraform `>= 1.0`, AWS provider `>= 6.0`
+- Run `just fmt` before committing
+- Keep the `v15`/`v16`/`v17` setting keys stable to avoid resource recreation
+- Networking is looked up, not created — assume VPC/subnet group/SGs pre-exist
+- Follow the patterns in the module you're editing
 
 ## Commands
 
-All workflows are defined in the [`justfile`](./justfile):
+```bash
+mise install       # install the toolchain (mise.toml)
+just init          # terraform init (providers + modules)
+just validate      # validate configuration
+just fmt           # format .tf files
+just plan          # plan (needs AWS creds + existing network)
+just apply         # apply
+```
 
-| Command | Action |
-|---------|--------|
-| `just init` | `terraform init` (providers + modules) |
-| `just validate` | validate the configuration |
-| `just fmt` | format `.tf` files in place |
-| `just plan` / `just apply` | plan / apply changes |
-| `just docs` | regenerate README tables via `terraform-docs` |
+## Cloud agent environments
 
-## Local verification (no AWS account)
+Automated environments install the toolchain via `mise` (`mise.toml`). `plan`
+and `apply` need real AWS credentials plus a pre-existing VPC, DB subnet group,
+and security groups — the provider validates credentials via STS even during
+`plan` — so agents can only run the offline loop (`just init`, `just validate`,
+`just fmt`) without AWS access.
 
-`just init`, `just validate`, and `terraform fmt -check -recursive` run fully offline and form the core development loop.
-
-## `plan` / `apply` require live AWS
-
-`just plan` and `just apply` need real AWS credentials **and** a pre-existing VPC, DB subnet group, and security groups (looked up by name). The AWS provider validates credentials via STS **even during `plan`**, so `plan` fails immediately without valid credentials.
-
-## Cursor Cloud agents
-
-Cursor Cloud environment specifics live in the project rule [`.cursor/rules/cloud-agent-environment.mdc`](./.cursor/rules/cloud-agent-environment.mdc).
+Per-platform setup lives with its own config; Cursor Cloud is in
+[`.cursor/rules/cloud-agent-environment.mdc`](.cursor/rules/cloud-agent-environment.mdc).
