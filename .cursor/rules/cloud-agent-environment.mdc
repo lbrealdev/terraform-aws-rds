@@ -1,24 +1,20 @@
 ---
-description: Environment setup contract for the terraform-aws-rds Cursor Cloud agent. Apply when creating or updating the cloud environment (installing tooling or verifying setup). Install only what is listed; do not add tooling or config the stack does not require.
+description: Cloud environment setup for terraform-aws-rds. Apply when creating or updating the Cursor Cloud agent environment.
 alwaysApply: false
 ---
 
 # Cloud Agent Environment Setup
 
-When configuring a Cursor Cloud environment for this Terraform stack, install
-exactly the tooling below and nothing more. Do not invent extra config (no
-`mise` setup unless a `mise.toml` exists, no `environment.json`, no Dockerfile).
+Manage all tooling for this Terraform stack through `mise`. Do not install tools
+individually or add config the stack does not require (no `environment.json`,
+no Dockerfile).
 
-## Required tools
+## Setup
 
-- `terraform` (>= 1.0)
-- `just`
-- `aws` (AWS CLI v2)
-- `terraform-docs`
-- `jq`
-
-## Verify (offline, no AWS account)
-
-`just init`, `just validate`, and `terraform fmt -check -recursive`.
-(`just plan` / `just apply` need real AWS credentials plus a pre-existing VPC,
-DB subnet group, and security groups, so they can't run during setup.)
+1. Check whether `mise` is installed; if not, install `mise` first.
+2. Use `mise` to install the required tools (pin them in a `mise.toml`):
+   - `terraform` (>= 1.0)
+   - `just`
+   - `aws` (AWS CLI v2)
+   - `terraform-docs`
+   - `jq`
