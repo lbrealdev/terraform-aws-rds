@@ -6,15 +6,13 @@ alwaysApply: false
 # Cloud Agent Environment Setup
 
 Manage all tooling for this Terraform stack through `mise`. Do not install tools
-individually or add config the stack does not require (no `environment.json`,
-no Dockerfile).
+individually.
 
 ## Setup
 
 1. Check whether `mise` is installed; if not, install `mise` first.
-2. Use `mise` to install the required tools (pin them in a `mise.toml`):
-   - `terraform` (>= 1.0)
+2. Install the required tools with `mise install` (each pinned to `latest` in `mise.toml`):
+   - `terraform`
    - `just`
    - `aws` (AWS CLI v2)
    - `terraform-docs`
-   - `jq`

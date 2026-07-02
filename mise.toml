@@ -1,0 +1,5 @@
+[tools]
+terraform = "latest"
+just = "latest"
+awscli = "latest"
+terraform-docs = "latest"
