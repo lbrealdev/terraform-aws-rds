@@ -7,12 +7,3 @@ alwaysApply: true
 
 Environment notes for Cursor Cloud agents in this repository. General
 development guidance lives in the root `AGENTS.md`.
-
-## Verifying the environment
-
-Offline loop (no AWS credentials): `just init` -> `just validate` ->
-`terraform fmt -check -recursive`.
-
-`just plan` / `just apply` require real AWS credentials plus a pre-existing VPC,
-DB subnet group, and security groups. The AWS provider validates credentials via
-STS even at `plan` time, so `plan` cannot run fully offline.
