@@ -1,7 +1,7 @@
 locals {
   # SQL Server uses major_engine_version like "15.00" → suffix "15".
   # MariaDB uses "10.11" / "11.4" → suffix "10-11" / "11-4" to avoid collisions.
-  major_version = can(regex("^[0-9]+\\.[0-9]+$", var.major_engine_version)) && !can(regex("^[0-9]+\\.00$", var.major_engine_version)) ? replace(var.major_engine_version, ".", "-") : split(".", var.major_engine_version)[0]
+  major_version        = can(regex("^[0-9]+\\.[0-9]+$", var.major_engine_version)) && !can(regex("^[0-9]+\\.00$", var.major_engine_version)) ? replace(var.major_engine_version, ".", "-") : split(".", var.major_engine_version)[0]
   effective_name       = coalesce(var.name, var.prefix)
   parameter_group_name = "${local.effective_name}-parameter-group-${local.major_version}"
   option_group_name    = "${local.effective_name}-option-group-${local.major_version}"

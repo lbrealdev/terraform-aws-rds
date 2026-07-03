@@ -113,6 +113,6 @@ module "rds_rollback" {
 check "rds_settings_active_key_valid" {
   assert {
     condition     = contains(keys(local.rds_settings), local.rds_settings_active_key)
-    error_message = "rds_settings_active_key \"${local.rds_settings_active_key}\" is not defined for db_engine \"${var.db_engine}\"."
+    error_message = "rds_settings_active_key \"${local.rds_settings_active_key}\" is not defined in local.rds_settings."
   }
 }

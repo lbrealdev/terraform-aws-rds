@@ -2,7 +2,7 @@ locals {
   rds_parameters = []
   rds_options    = []
 
-  sqlserver_web_settings = {
+  rds_settings = {
     "v15" = {
       name = ""
 
@@ -50,14 +50,12 @@ locals {
       option_group = {
         engine_name          = "sqlserver-web"
         major_engine_version = "16.00"
-        description          = "Infra option group for SQL Server 2022 (v16)"
+        description          = "Infra option group for SQL Server 2022 Web (v16)"
         options              = local.rds_options
       }
     }
-  }
 
-  mariadb_settings = {
-    "v10_11" = {
+    "v10" = {
       name = ""
 
       parameter_group = {
@@ -74,7 +72,7 @@ locals {
       }
     }
 
-    "v11_4" = {
+    "v11" = {
       name = ""
 
       parameter_group = {
@@ -92,10 +90,5 @@ locals {
     }
   }
 
-  rds_settings = var.db_engine == "mariadb" ? local.mariadb_settings : local.sqlserver_web_settings
-
-  rds_settings_active_key = coalesce(
-    var.rds_settings_active_key,
-    var.db_engine == "mariadb" ? "v10_11" : "v15"
-  )
+  rds_settings_active_key = var.rds_settings_active_key
 }

@@ -152,7 +152,7 @@ variable "iops" {
   default     = null
 
   validation {
-    condition     = var.iops == null || (
+    condition = var.iops == null || (
       (var.storage_type == "gp3" && var.iops >= 3000 && var.iops <= 16000) ||
       (contains(["io1", "io2"], var.storage_type) && var.iops >= 1000 && var.iops <= 64000)
     )
