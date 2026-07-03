@@ -8,7 +8,7 @@ locals {
 
       parameter_group = {
         family      = "sqlserver-web-15.0"
-        description = "Production parameter group for SQL Server 2019 (v15)"
+        description = "RDS Parameter Group for SQL Server 2019 (v15)"
         parameters  = local.rds_parameters
       }
 
@@ -25,7 +25,7 @@ locals {
 
       parameter_group = {
         family      = "sqlserver-web-16.0"
-        description = "Production parameter group for SQL Server 2022 (v16)"
+        description = "RDS Parameter Group for SQL Server 2022 (v16)"
         parameters  = local.rds_parameters
       }
 
@@ -43,7 +43,7 @@ locals {
 
       parameter_group = {
         family      = "sqlserver-web-16.0"
-        description = "Infra parameter group for SQL Server 2022 (v16)"
+        description = "RDS Parameter Group for SQL Server 2022 (v16)"
         parameters  = local.rds_parameters
       }
 
@@ -60,7 +60,7 @@ locals {
 
       parameter_group = {
         family      = "mariadb10.11"
-        description = "Production parameter group for MariaDB 10.11"
+        description = "RDS Parameter Group for MariaDB 10.11"
         parameters  = local.rds_parameters
       }
 
@@ -77,7 +77,7 @@ locals {
 
       parameter_group = {
         family      = "mariadb11.4"
-        description = "Production parameter group for MariaDB 11.4"
+        description = "RDS Parameter Group for MariaDB 11.4"
         parameters  = local.rds_parameters
       }
 
