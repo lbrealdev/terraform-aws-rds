@@ -80,12 +80,13 @@ Each row in the tables above maps to three fields in this stack:
 2. **Match the edition** — for SQL Server, pick the row for your edition (Web, Standard, Enterprise, Express).
 3. **Match the target version** — the family must align with the major version you plan to run or upgrade to.
 4. **Aurora vs RDS** — Aurora families (`aurora-*`) are not interchangeable with non-Aurora families.
-5. **Use stable keys in `locals.tf`** — keep version keys (e.g. `v15`, `v10_11`) stable across upgrades so Terraform does not recreate groups unnecessarily.
+5. **Use stable keys in `locals.tf`** — keep version keys (e.g. `v15`, `v10`, `v11`) stable across upgrades so Terraform does not recreate groups unnecessarily.
 
 **In this repo**
 
-- Set `db_engine` and pick a row from the matching table when defining `local.rds_settings`.
-- Point `rds_settings_active_key` at the stable key for the version the instance should use.
+- Define parameter/option groups in `local.rds_settings` in `locals.tf` using a row from the tables above (`family`, `engine_name`, `major_engine_version`).
+- Set `rds_settings_active_key` in `.tfvars` to the stable key for the running instance (e.g. `v15`, `v10`).
+- Set `db_engine_version` in `.tfvars` to the full AWS engine version string.
 - Document your choices in PRs or runbooks so rollback and audits stay traceable.
 
 ## Option groups
