@@ -49,9 +49,7 @@ modules/
 
 ## References
 
-- AWS RDS Snapshots: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html
-- AWS Restore from Snapshot: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_RestoreFromSnapshot.html
-- Terraform `aws_db_snapshot`:
-  https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_snapshot
-- Terraform restore-from-snapshot:
-  https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance#restoring-from-a-snapshot
+- [AWS RDS Snapshots](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html)
+- [AWS Restore from Snapshot](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_RestoreFromSnapshot.html)
+- [Terraform `aws_db_snapshot`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_snapshot)
+- [Terraform restore from snapshot](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance#restoring-from-a-snapshot)

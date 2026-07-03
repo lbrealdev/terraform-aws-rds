@@ -150,5 +150,5 @@ Map CLI output to this stack: `Family` → `parameter_group.family`, `Major` →
 
 ## References
 
-- Amazon RDS Parameter Groups: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_ParamGroups.html
-- Amazon RDS Option Groups: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Resources.html#CHAP_Options
+- [Amazon RDS Parameter Groups](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_ParamGroups.html)
+- [Amazon RDS Option Groups](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Resources.html#CHAP_Options)
