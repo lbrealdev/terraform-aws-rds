@@ -2,9 +2,6 @@
 
 Terraform module stack for deploying AWS RDS instances with **zero-downtime upgrade patterns** and **safe rollback capabilities**. Designed for production environments where database migrations need to be safe, repeatable, and recoverable.
 
-> [!NOTE]
-> The RDS modules support **SQL Server**, **MySQL**, and **PostgreSQL** (including Aurora).
-
 ## Table of Contents
 
 - [Quickstart](#quickstart)
