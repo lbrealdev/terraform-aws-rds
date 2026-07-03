@@ -13,7 +13,15 @@ db_instance_enabled = true
 db_instance_class   = "db.t3.medium"
 
 # RDS Instance - Engine
+# db_engine = "sqlserver-web"  # default
+# db_engine = "mariadb"
+# rds_settings_active_key = "v10_11"  # optional; defaults by db_engine (v15 / v10_11)
 rds_engine_version = "15.00.4198.2.v1"
+# MariaDB example:
+# db_engine              = "mariadb"
+# rds_settings_active_key = "v10_11"
+# rds_engine_version     = "10.11.10"
+# db_allocated_storage   = 20
 
 # RDS Instance - Maintenance
 db_apply_immediately           = true

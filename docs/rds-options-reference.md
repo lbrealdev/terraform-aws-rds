@@ -28,6 +28,22 @@ This document provides references for AWS RDS parameter group families and optio
 - `mysql5.7` → engine: `mysql`, version: `5.7`
 - `mysql8.0` → engine: `mysql`, version: `8.0`
 
+## MariaDB parameter group families
+
+- `mariadb10.6` → engine: `mariadb`, version: `10.6`
+- `mariadb10.11` → engine: `mariadb`, version: `10.11`
+- `mariadb11.4` → engine: `mariadb`, version: `11.4`
+
+## MariaDB option groups
+
+MariaDB option groups use `engine_name = "mariadb"` with a matching `major_engine_version` (e.g. `10.11`, `11.4`).
+
+### Option group types
+
+#### `MARIADB_AUDIT_PLUGIN`
+
+Enables the MariaDB audit plugin (MariaDB 10.3+).
+
 ## PostgreSQL parameter group families
 
 - `postgres10` → engine: `postgres`, version: `10`

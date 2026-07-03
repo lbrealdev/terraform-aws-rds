@@ -44,12 +44,12 @@ module "rds_instance" {
   instance_class = var.db_instance_class
 
   # --- Engine ---
-  engine         = module.rds_settings["v15"].engine_name
+  engine         = module.rds_settings[local.rds_settings_active_key].engine_name
   engine_version = var.rds_engine_version
 
   # --- Settings ---
-  option_group_name    = module.rds_settings["v15"].option_group_name
-  parameter_group_name = module.rds_settings["v15"].parameter_group_name
+  option_group_name    = module.rds_settings[local.rds_settings_active_key].option_group_name
+  parameter_group_name = module.rds_settings[local.rds_settings_active_key].parameter_group_name
 
   # --- Network ---
   db_subnet_group_name   = module.rds_networking_data.db_subnet_group_name
@@ -98,8 +98,8 @@ module "rds_rollback" {
   db_subnet_group_name   = module.rds_networking_data.db_subnet_group_name
   vpc_security_group_ids = module.rds_networking_data.security_group_ids
 
-  parameter_group_name = module.rds_settings["v15"].parameter_group_name
-  option_group_name    = module.rds_settings["v15"].option_group_name
+  parameter_group_name = module.rds_settings[local.rds_settings_active_key].parameter_group_name
+  option_group_name    = module.rds_settings[local.rds_settings_active_key].option_group_name
 
   skip_final_snapshot       = var.rollback_skip_final_snapshot
   final_snapshot_identifier = var.rollback_final_snapshot_identifier
@@ -107,5 +107,12 @@ module "rds_rollback" {
 
   tags = {
     Purpose = "rollback"
+  }
+}
+
+check "rds_settings_active_key_valid" {
+  assert {
+    condition     = contains(keys(local.rds_settings), local.rds_settings_active_key)
+    error_message = "rds_settings_active_key \"${local.rds_settings_active_key}\" is not defined for db_engine \"${var.db_engine}\"."
   }
 }

@@ -2,8 +2,7 @@ locals {
   rds_parameters = []
   rds_options    = []
 
-  rds_settings = {
-
+  sqlserver_web_settings = {
     "v15" = {
       name = ""
 
@@ -56,4 +55,47 @@ locals {
       }
     }
   }
+
+  mariadb_settings = {
+    "v10_11" = {
+      name = ""
+
+      parameter_group = {
+        family      = "mariadb10.11"
+        description = "Production parameter group for MariaDB 10.11"
+        parameters  = local.rds_parameters
+      }
+
+      option_group = {
+        engine_name          = "mariadb"
+        major_engine_version = "10.11"
+        description          = "RDS Option Group for MariaDB 10.11"
+        options              = local.rds_options
+      }
+    }
+
+    "v11_4" = {
+      name = ""
+
+      parameter_group = {
+        family      = "mariadb11.4"
+        description = "Production parameter group for MariaDB 11.4"
+        parameters  = local.rds_parameters
+      }
+
+      option_group = {
+        engine_name          = "mariadb"
+        major_engine_version = "11.4"
+        description          = "RDS Option Group for MariaDB 11.4"
+        options              = local.rds_options
+      }
+    }
+  }
+
+  rds_settings = var.db_engine == "mariadb" ? local.mariadb_settings : local.sqlserver_web_settings
+
+  rds_settings_active_key = coalesce(
+    var.rds_settings_active_key,
+    var.db_engine == "mariadb" ? "v10_11" : "v15"
+  )
 }

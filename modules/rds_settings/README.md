@@ -1,6 +1,6 @@
 # RDS Settings Module
 
-This Terraform module creates RDS Option Groups and Parameter Groups for different SQL Server versions.
+This Terraform module creates RDS Option Groups and Parameter Groups for SQL Server and MariaDB versions.
 
 ## Usage
 
@@ -36,13 +36,17 @@ module "rds_instance" {
 
 ### Available Versions
 
-The module currently supports:
+**SQL Server Web** (`db_engine = "sqlserver-web"`):
 - `v15` - SQL Server 2019 (15.00)
 - `v16` - SQL Server 2022 (16.00)
 
+**MariaDB** (`db_engine = "mariadb"`):
+- `v10_11` - MariaDB 10.11
+- `v11_4` - MariaDB 11.4
+
 To use a different version, reference it by key:
 - `module.rds_settings["v15"]` for SQL Server 2019
-- `module.rds_settings["v16"]` for SQL Server 2022
+- `module.rds_settings["v10_11"]` for MariaDB 10.11
 
 ### Module Outputs
 

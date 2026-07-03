@@ -29,7 +29,7 @@ variable "identifier" {
 }
 
 variable "engine" {
-  description = "The database engine to use (e.g., mysql, postgres, sqlserver-web) - not required when using snapshot_identifier"
+  description = "The database engine to use (e.g., mariadb, mysql, postgres, sqlserver-web) - not required when using snapshot_identifier"
   type        = string
   default     = null
 }

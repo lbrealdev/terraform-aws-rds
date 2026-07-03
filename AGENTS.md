@@ -3,10 +3,10 @@
 ## Project
 
 Reusable Terraform module stack for provisioning AWS RDS instances (SQL Server,
-MySQL, PostgreSQL/Aurora) with an emphasis on safe engine upgrades and recovery:
+MySQL, MariaDB, PostgreSQL/Aurora) with an emphasis on safe engine upgrades and recovery:
 
 - **Version-stable settings** — parameter/option groups keyed by engine version
-  (`v15`/`v16`/`v17`) so upgrades don't force resource recreation
+  (`v15`/`v16`/`v17` for SQL Server; `v10_11`/`v11_4` for MariaDB) so upgrades don't force resource recreation
 - **Snapshot-based rollback** — restore from a snapshot and stop the source
   instance for post-upgrade recovery
 
@@ -40,7 +40,7 @@ Issue → Branch → Implement → PR → Review → Merge to main
 
 - Terraform `>= 1.0`, AWS provider `>= 6.0`
 - Run `just fmt` before committing
-- Keep the `v15`/`v16`/`v17` setting keys stable to avoid resource recreation
+- Keep version setting keys stable (`v15`/`v16`/`v17` for SQL Server; `v10_11`/`v11_4` for MariaDB) to avoid resource recreation
 - Networking is looked up, not created — assume VPC/subnet group/SGs pre-exist
 - Follow the patterns in the module you're editing
 

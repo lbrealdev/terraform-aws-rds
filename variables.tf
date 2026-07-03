@@ -52,6 +52,24 @@ variable "db_instance_class" {
 }
 
 # RDS Instance - Engine
+variable "db_engine" {
+  description = "Database engine for the root stack: sqlserver-web or mariadb"
+  type        = string
+  default     = "sqlserver-web"
+
+  validation {
+    condition     = contains(["sqlserver-web", "mariadb"], var.db_engine)
+    error_message = "db_engine must be sqlserver-web or mariadb."
+  }
+}
+
+variable "rds_settings_active_key" {
+  description = "Stable key in local.rds_settings for the running instance (e.g. v15, v10_11). Defaults by db_engine."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "rds_engine_version" {
   description = "The engine version for the RDS instance"
   type        = string

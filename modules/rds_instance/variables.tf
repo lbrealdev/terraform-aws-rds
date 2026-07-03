@@ -9,7 +9,7 @@ variable "enabled" {
 }
 
 variable "engine" {
-  description = "The database engine to use (e.g., mysql, postgres)"
+  description = "The database engine to use (e.g., mariadb, mysql, postgres, sqlserver-web)"
   type        = string
 }
 
