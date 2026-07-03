@@ -2,9 +2,6 @@
 
 Terraform module stack for deploying AWS RDS instances with **zero-downtime upgrade patterns** and **safe rollback capabilities**. Designed for production environments where database migrations need to be safe, repeatable, and recoverable.
 
-> [!NOTE]
-> The RDS modules support **SQL Server**, **MySQL**, and **PostgreSQL** (including Aurora).
-
 ## Table of Contents
 
 - [Quickstart](#quickstart)
@@ -15,6 +12,11 @@ Terraform module stack for deploying AWS RDS instances with **zero-downtime upgr
 - [Contributing](#contributing)
 
 ## Quickstart
+
+> [!NOTE]
+> This repo uses [`just`](https://github.com/casey/just) as its task runner (`just init`, `just plan`, etc.).
+> Install [mise](https://mise.jdx.dev), then run `mise install` from the repo root to install the full toolchain from [`mise.toml`](./mise.toml) (`terraform`, `just`, `aws`, `terraform-docs`).
+> If you already manage tools yourself, you only need `just` (plus whatever each recipe requires).
 
 1. Configure required variables (see `variables.tf`)
 2. Run:
@@ -107,6 +109,11 @@ The stack is distributed across four core modules:
 ## Contributing
 
 Contributions are welcome. Please open an issue or submit a Pull Request following the standard repository workflow.
+
+> [!NOTE]
+> - **Development guide** — [`AGENTS.md`](./AGENTS.md) (conventions, workflow, command reference)
+> - **Toolchain** — [`mise.toml`](./mise.toml) via [mise](https://mise.jdx.dev): `mise install`
+> - **Cursor Cloud setup** — [`.cursor/rules/cloud-agent-environment.mdc`](.cursor/rules/cloud-agent-environment.mdc)
 
 ## License
 
