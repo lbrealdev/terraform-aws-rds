@@ -47,6 +47,7 @@ Issue → Branch → Implement → PR → Review → Merge to main
 ## Commands
 
 ```bash
+mise trust         # trust mise.toml (once per machine)
 mise install       # install the toolchain (mise.toml)
 just init          # terraform init (providers + modules)
 just validate      # validate configuration
