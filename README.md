@@ -72,7 +72,7 @@ Key variables available in the root stack:
 | **Networking** | `security_group_names` | List of VPC security group names |
 | **Database** | `db_username` | Master database username |
 | **Database** | `db_password` | Master database password |
-| **Database** | `rds_engine_version` | Target engine version (e.g. full version to pin) |
+| **Database** | `db_engine_version` | Target engine version (e.g. full version to pin) |
 | **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) |
 | **Database** | `db_allocated_storage` | Allocated storage in gigabytes |
 | **Storage** | `db_instance_storage_type` | Storage type: gp2 (default), gp3, io1, io2, standard |

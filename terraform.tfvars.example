@@ -15,7 +15,7 @@ rds_settings_tags       = {}
 
 # MariaDB example:
 # rds_settings_active_key = "v10"
-# rds_engine_version      = "10.11.10"
+# db_engine_version      = "10.11.10"
 # db_allocated_storage    = 20
 
 # --- module: rds_instance ---
@@ -25,7 +25,7 @@ db_instance_enabled = true
 db_instance_class   = "db.t3.medium"
 
 # Engine
-rds_engine_version = "15.00.4198.2.v1"
+db_engine_version = "15.00.4198.2.v1"
 
 # Maintenance
 db_apply_immediately           = true

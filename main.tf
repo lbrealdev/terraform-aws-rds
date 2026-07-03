@@ -45,7 +45,7 @@ module "rds_instance" {
 
   # --- Engine ---
   engine         = module.rds_settings[local.rds_settings_active_key].engine_name
-  engine_version = var.rds_engine_version
+  engine_version = var.db_engine_version
 
   # --- Settings ---
   option_group_name    = module.rds_settings[local.rds_settings_active_key].option_group_name

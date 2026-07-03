@@ -58,7 +58,7 @@ variable "rds_settings_active_key" {
   default     = "v15"
 }
 
-variable "rds_engine_version" {
+variable "db_engine_version" {
   description = "The engine version for the RDS instance"
   type        = string
   default     = "15.00.4198.2.v1"
