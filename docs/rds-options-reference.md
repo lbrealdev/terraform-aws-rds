@@ -15,15 +15,19 @@ This document provides references for AWS RDS parameter group families and optio
 
 ## MySQL parameter group families
 
-- `mysql5.6` → engine: `mysql`, version: `5.6`
-- `mysql5.7` → engine: `mysql`, version: `5.7`
-- `mysql8.0` → engine: `mysql`, version: `8.0`
+| Family | Engine | Major version |
+|--------|--------|---------------|
+| `mysql5.6` | `mysql` | `5.6` |
+| `mysql5.7` | `mysql` | `5.7` |
+| `mysql8.0` | `mysql` | `8.0` |
 
 ## MariaDB parameter group families
 
-- `mariadb10.6` → engine: `mariadb`, version: `10.6`
-- `mariadb10.11` → engine: `mariadb`, version: `10.11`
-- `mariadb11.4` → engine: `mariadb`, version: `11.4`
+| Family | Engine | Major version |
+|--------|--------|---------------|
+| `mariadb10.6` | `mariadb` | `10.6` |
+| `mariadb10.11` | `mariadb` | `10.11` |
+| `mariadb11.4` | `mariadb` | `11.4` |
 
 ## MariaDB option groups
 
@@ -37,28 +41,34 @@ Enables the MariaDB audit plugin (MariaDB 10.3+).
 
 ## PostgreSQL parameter group families
 
-- `postgres10` → engine: `postgres`, version: `10`
-- `postgres11` → engine: `postgres`, version: `11`
-- `postgres12` → engine: `postgres`, version: `12`
-- `postgres13` → engine: `postgres`, version: `13`
-- `postgres14` → engine: `postgres`, version: `14`
-- `postgres15` → engine: `postgres`, version: `15`
-- `postgres16` → engine: `postgres`, version: `16`
+| Family | Engine | Major version |
+|--------|--------|---------------|
+| `postgres10` | `postgres` | `10` |
+| `postgres11` | `postgres` | `11` |
+| `postgres12` | `postgres` | `12` |
+| `postgres13` | `postgres` | `13` |
+| `postgres14` | `postgres` | `14` |
+| `postgres15` | `postgres` | `15` |
+| `postgres16` | `postgres` | `16` |
 
 ## Aurora MySQL parameter group families
 
-- `aurora-mysql5.7` → engine: `aurora-mysql`, version: `5.7`
-- `aurora-mysql8.0` → engine: `aurora-mysql`, version: `8.0`
+| Family | Engine | Major version |
+|--------|--------|---------------|
+| `aurora-mysql5.7` | `aurora-mysql` | `5.7` |
+| `aurora-mysql8.0` | `aurora-mysql` | `8.0` |
 
 ## Aurora PostgreSQL parameter group families
 
-- `aurora-postgresql10` → engine: `aurora-postgresql`, version: `10`
-- `aurora-postgresql11` → engine: `aurora-postgresql`, version: `11`
-- `aurora-postgresql12` → engine: `aurora-postgresql`, version: `12`
-- `aurora-postgresql13` → engine: `aurora-postgresql`, version: `13`
-- `aurora-postgresql14` → engine: `aurora-postgresql`, version: `14`
-- `aurora-postgresql15` → engine: `aurora-postgresql`, version: `15`
-- `aurora-postgresql16` → engine: `aurora-postgresql`, version: `16`
+| Family | Engine | Major version |
+|--------|--------|---------------|
+| `aurora-postgresql10` | `aurora-postgresql` | `10` |
+| `aurora-postgresql11` | `aurora-postgresql` | `11` |
+| `aurora-postgresql12` | `aurora-postgresql` | `12` |
+| `aurora-postgresql13` | `aurora-postgresql` | `13` |
+| `aurora-postgresql14` | `aurora-postgresql` | `14` |
+| `aurora-postgresql15` | `aurora-postgresql` | `15` |
+| `aurora-postgresql16` | `aurora-postgresql` | `16` |
 
 ## SQL Server option groups
 
