@@ -121,6 +121,33 @@ Option groups use `engine_name = "mariadb"` with a matching `major_engine_versio
 
 Enables the MariaDB audit plugin (MariaDB 10.3+).
 
+## Verifying engine versions (AWS CLI)
+
+Use `aws rds describe-db-engine-versions` to confirm `EngineVersion`, `DBParameterGroupFamily`, and option-group `MajorEngineVersion` before updating `locals.tf` or `db_engine_version` in `.tfvars`. Requires AWS credentials and a configured region.
+
+```bash
+# MariaDB — list versions and parameter group families in the current region
+aws rds describe-db-engine-versions \
+  --engine mariadb \
+  --query 'DBEngineVersions[].{Version:EngineVersion,Family:DBParameterGroupFamily,Major:MajorEngineVersion}' \
+  --output table
+
+# MariaDB — inspect a major line (e.g. 10.11 for locals key v10)
+aws rds describe-db-engine-versions \
+  --engine mariadb \
+  --engine-version 10.11 \
+  --query 'DBEngineVersions[0].{Version:EngineVersion,Family:DBParameterGroupFamily,Major:MajorEngineVersion}' \
+  --output table
+
+# SQL Server Web — list available full version strings
+aws rds describe-db-engine-versions \
+  --engine sqlserver-web \
+  --query 'DBEngineVersions[].{Version:EngineVersion,Family:DBParameterGroupFamily,Major:MajorEngineVersion}' \
+  --output table
+```
+
+Map CLI output to this stack: `Family` → `parameter_group.family`, `Major` → `option_group.major_engine_version`, `Version` → `db_engine_version` in `.tfvars`.
+
 ## References
 
 - Amazon RDS Parameter Groups: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_ParamGroups.html
