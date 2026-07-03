@@ -4,23 +4,14 @@ This document provides references for AWS RDS parameter group families and optio
 
 ## SQL Server parameter group families
 
-### SQL Server Web Edition
-
-- `sqlserver-web-15.0` → engine: `sqlserver-web`, version: `15.00`
-
-### SQL Server Standard Edition
-
-- `sqlserver-se-15.0` → engine: `sqlserver-se`, version: `15.00`
-- `sqlserver-se-16.0` → engine: `sqlserver-se`, version: `16.00`
-
-### SQL Server Enterprise Edition
-
-- `sqlserver-ee-15.0` → engine: `sqlserver-ee`, version: `15.00`
-- `sqlserver-ee-16.0` → engine: `sqlserver-ee`, version: `16.00`
-
-### SQL Server Express Edition
-
-- `sqlserver-ex-15.0` → engine: `sqlserver-ex`, version: `15.00`
+| Edition | Family | Engine | Major version |
+|---------|--------|--------|---------------|
+| Web | `sqlserver-web-15.0` | `sqlserver-web` | `15.00` |
+| Standard | `sqlserver-se-15.0` | `sqlserver-se` | `15.00` |
+| Standard | `sqlserver-se-16.0` | `sqlserver-se` | `16.00` |
+| Enterprise | `sqlserver-ee-15.0` | `sqlserver-ee` | `15.00` |
+| Enterprise | `sqlserver-ee-16.0` | `sqlserver-ee` | `16.00` |
+| Express | `sqlserver-ex-15.0` | `sqlserver-ex` | `15.00` |
 
 ## MySQL parameter group families
 
