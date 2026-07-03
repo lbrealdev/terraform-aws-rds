@@ -36,17 +36,18 @@ module "rds_instance" {
 
 ### Available Versions
 
-**SQL Server Web** (`db_engine = "sqlserver-web"`):
+**SQL Server Web**
 - `v15` - SQL Server 2019 (15.00)
 - `v16` - SQL Server 2022 (16.00)
+- `v17` - SQL Server 2022 (16.00, custom name example in root `locals.tf`)
 
-**MariaDB** (`db_engine = "mariadb"`):
-- `v10_11` - MariaDB 10.11
-- `v11_4` - MariaDB 11.4
+**MariaDB**
+- `v10` - MariaDB 10.11
+- `v11` - MariaDB 11.4
 
 To use a different version, reference it by key:
 - `module.rds_settings["v15"]` for SQL Server 2019
-- `module.rds_settings["v10_11"]` for MariaDB 10.11
+- `module.rds_settings["v10"]` for MariaDB 10.11
 
 ### Module Outputs
 
@@ -64,6 +65,8 @@ module.rds_settings["v16"].option_group_id       # ID for references
 
 ### Root Module Outputs
 
+Keys shown below reflect the current root `locals.tf`; your map may include additional keys (e.g. `v10`, `v11` for MariaDB).
+
 When applied, these outputs are available:
 
 ```hcl
@@ -80,7 +83,7 @@ rds_option_group_names = {
 
 ### Adding/Removing Versions
 
-To add or remove SQL Server versions, edit `locals.tf`:
+To add or remove version entries, edit `local.rds_settings` in `locals.tf`:
 
 ```hcl
 locals {
@@ -92,7 +95,7 @@ locals {
 }
 ```
 
-**Important:** Using `for_each` with stable keys (v15, v16) ensures that adding/removing versions doesn't recreate existing resources.
+**Important:** Using `for_each` with stable keys (e.g. `v15`, `v10`, `v11`) ensures that adding/removing versions doesn't recreate existing resources.
 
 ### Resource Naming Convention
 
@@ -106,7 +109,7 @@ Resources are named using the pattern:
 
 The `name` variable overrides `prefix` when provided (non-empty). If `name` is empty, `prefix` is used instead.
 
-The `major_engine_version` (e.g., "16.00") is cleaned to extract just the integer ("16") for naming.
+The suffix in resource names is the first segment of `major_engine_version` before `.` (e.g. `"16.00"` → `16`, `"10.11"` → `10`, `"11.4"` → `11`).
 
 ## Requirements
 
