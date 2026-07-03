@@ -2,7 +2,11 @@
 
 This document provides references for AWS RDS parameter group families and option group engines.
 
-## SQL Server parameter group families
+## Parameter group families
+
+Use these tables to pick the correct `family`, `engine_name`, and `major_engine_version` for `locals.tf` / `rds_settings`.
+
+### SQL Server
 
 | Edition | Family | Engine | Major version |
 |---------|--------|--------|---------------|
@@ -13,7 +17,7 @@ This document provides references for AWS RDS parameter group families and optio
 | Enterprise | `sqlserver-ee-16.0` | `sqlserver-ee` | `16.00` |
 | Express | `sqlserver-ex-15.0` | `sqlserver-ex` | `15.00` |
 
-## MySQL parameter group families
+### MySQL
 
 | Family | Engine | Major version |
 |--------|--------|---------------|
@@ -21,7 +25,7 @@ This document provides references for AWS RDS parameter group families and optio
 | `mysql5.7` | `mysql` | `5.7` |
 | `mysql8.0` | `mysql` | `8.0` |
 
-## MariaDB parameter group families
+### MariaDB
 
 | Family | Engine | Major version |
 |--------|--------|---------------|
@@ -29,17 +33,7 @@ This document provides references for AWS RDS parameter group families and optio
 | `mariadb10.11` | `mariadb` | `10.11` |
 | `mariadb11.4` | `mariadb` | `11.4` |
 
-## MariaDB option groups
-
-MariaDB option groups use `engine_name = "mariadb"` with a matching `major_engine_version` (e.g. `10.11`, `11.4`).
-
-### Option group types
-
-#### `MARIADB_AUDIT_PLUGIN`
-
-Enables the MariaDB audit plugin (MariaDB 10.3+).
-
-## PostgreSQL parameter group families
+### PostgreSQL
 
 | Family | Engine | Major version |
 |--------|--------|---------------|
@@ -51,14 +45,14 @@ Enables the MariaDB audit plugin (MariaDB 10.3+).
 | `postgres15` | `postgres` | `15` |
 | `postgres16` | `postgres` | `16` |
 
-## Aurora MySQL parameter group families
+### Aurora MySQL
 
 | Family | Engine | Major version |
 |--------|--------|---------------|
 | `aurora-mysql5.7` | `aurora-mysql` | `5.7` |
 | `aurora-mysql8.0` | `aurora-mysql` | `8.0` |
 
-## Aurora PostgreSQL parameter group families
+### Aurora PostgreSQL
 
 | Family | Engine | Major version |
 |--------|--------|---------------|
@@ -70,37 +64,61 @@ Enables the MariaDB audit plugin (MariaDB 10.3+).
 | `aurora-postgresql15` | `aurora-postgresql` | `15` |
 | `aurora-postgresql16` | `aurora-postgresql` | `16` |
 
-## SQL Server option groups
+### Selecting the right parameter group family
 
-### Option group types
+Each row in the tables above maps to three fields in this stack:
+
+| Field | Where it goes | Example (MariaDB 10.11) |
+|-------|---------------|-------------------------|
+| `family` | `parameter_group.family` in `locals.tf` | `mariadb10.11` |
+| `engine_name` | `option_group.engine_name` in `locals.tf` | `mariadb` |
+| `major_engine_version` | `option_group.major_engine_version` in `locals.tf` | `10.11` |
+
+**Checklist**
+
+1. **Match the engine** — `family`, `engine_name`, and `major_engine_version` must belong to the same engine (see tables above).
+2. **Match the edition** — for SQL Server, pick the row for your edition (Web, Standard, Enterprise, Express).
+3. **Match the target version** — the family must align with the major version you plan to run or upgrade to.
+4. **Aurora vs RDS** — Aurora families (`aurora-*`) are not interchangeable with non-Aurora families.
+5. **Use stable keys in `locals.tf`** — keep version keys (e.g. `v15`, `v10_11`) stable across upgrades so Terraform does not recreate groups unnecessarily.
+
+**In this repo**
+
+- Set `db_engine` and pick a row from the matching table when defining `local.rds_settings`.
+- Point `rds_settings_active_key` at the stable key for the version the instance should use.
+- Document your choices in PRs or runbooks so rollback and audits stay traceable.
+
+## Option groups
+
+Option groups are separate from parameter groups. Not every engine uses them — this section documents engines that have been validated in this project. Others can be added over time as they are tested.
+
+### SQL Server
 
 #### `SQLSERVER_BACKUP_RESTORE`
 
 Enables native backup and restore to Amazon S3 using AWS credentials.
 
-**Required option settings**
-- `IAM_ROLE_ARN`: ARN of the IAM role with S3 permissions
+| Setting | Required | Description |
+|---------|----------|-------------|
+| `IAM_ROLE_ARN` | Yes | ARN of the IAM role with S3 permissions |
 
 #### `SQLSERVER_BACKUP`
 
 Configures automatic backup schedules for SQL Server.
 
-**Optional option settings**
-- `BACKUP_HOUR`: hour (0-23), default `2`
-- `BACKUP_MINUTE`: minute (0-59), default `0`
-- `ENABLED`: enable automatic backups (`true` or `false`)
+| Setting | Required | Default | Description |
+|---------|----------|---------|-------------|
+| `BACKUP_HOUR` | No | `2` | Hour of day (0–23) |
+| `BACKUP_MINUTE` | No | `0` | Minute (0–59) |
+| `ENABLED` | No | — | Enable automatic backups (`true` or `false`) |
 
-## Selecting the right parameter group family
+### MariaDB
 
-**Considerations**
-1. Engine edition (web/se/ee/ex)
-2. Engine version compatibility
-3. Aurora vs non-Aurora compatibility
-4. Performance/workload fit
+Option groups use `engine_name = "mariadb"` with a matching `major_engine_version` from the parameter group table (e.g. `10.11`, `11.4`).
 
-**Best practices**
-- Use matching `family` + `engine_name` + `major_engine_version`
-- Document parameter/option group choices for rollback/auditing
+#### `MARIADB_AUDIT_PLUGIN`
+
+Enables the MariaDB audit plugin (MariaDB 10.3+).
 
 ## References
 
