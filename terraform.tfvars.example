@@ -1,47 +1,65 @@
-# AWS Configuration
-aws_region   = "eu-central-1"
-prefix_name  = "dev"
+# --- Global ---
+aws_region  = "eu-central-1"
+prefix_name = "dev"
 
-# Networking
+# --- module: rds_networking_data ---
 networking_enabled   = true
 vpc_id               = "vpc-xxxxx"
 db_subnet_group_name = "your-db-subnet-group"
 security_group_names = ["your-security-group-1", "your-security-group-2"]
 
-# RDS Instance - Instance
+# --- module: rds_settings ---
+# Parameter/option group map is in locals.tf — keys: v15, v16, v17, v10, v11
+rds_settings_active_key = "v15"
+rds_settings_tags       = {}
+
+# MariaDB example (uncomment and comment out SQL Server defaults above):
+# rds_settings_active_key = "v10"              # or "v11" for MariaDB 11.4
+# db_engine_version       = "10.11.10"         # full AWS engine version string
+# db_instance_class       = "db.t3.small"
+# db_allocated_storage    = 20                   # MariaDB minimum
+# db_instance_storage_type       = "gp3"
+# db_instance_storage_throughput = 300
+# license_model          = null                  # SQL Server only
+# domain                 = null                  # SQL Server EE only
+# domain_iam_role_name   = null                  # SQL Server EE only
+
+# --- module: rds_instance ---
+
+# Instance
 db_instance_enabled = true
 db_instance_class   = "db.t3.medium"
 
-# RDS Instance - Engine
-rds_engine_version = "15.00.4198.2.v1"
+# Engine
+db_engine_version = "15.00.4198.2.v1"
 
-# RDS Instance - Maintenance
+# Maintenance
 db_apply_immediately           = true
 db_allow_major_version_upgrade = true
 db_auto_minor_version_upgrade  = true
 db_skip_final_snapshot         = false
 
-# RDS Instance - User
+# User
 db_username = "admin"
 db_password = "your-secure-password"
 
-# RDS Instance - Storage
-db_allocated_storage           = 100
-db_instance_storage_type       = "gp3" # Options: standard, gp2, gp3, io1, io2
-db_instance_storage_throughput = 300  # Required for gp3: 125-1000 MB/s (recommended: 300+)
-db_instance_iops               = null  # Optional for gp3: 3000-16000, Required for io1/io2: 1000-64000
-db_instance_max_allocated_storage = null  # Storage Autoscaling: set >= allocated_storage to enable
-db_instance_storage_encrypted     = false  # Encrypt storage at rest
-db_instance_kms_key_id            = null  # Custom KMS key ARN (required if storage_encrypted = true with custom key)
+# Storage
+db_allocated_storage              = 100
+db_instance_storage_type          = "gp3" # Options: standard, gp2, gp3, io1, io2
+db_instance_storage_throughput    = 300  # Required for gp3: 125-1000 MB/s (recommended: 300+)
+db_instance_iops                  = null # Optional for gp3: 3000-16000; required for io1/io2: 1000-64000
+db_instance_max_allocated_storage = null # Storage autoscaling: set >= allocated_storage to enable
+db_instance_storage_encrypted     = false
+db_instance_kms_key_id            = null # Custom KMS key ARN when storage_encrypted = true
 
-# RDS Instance - License
-license_model = "license-included"
+# License (SQL Server only, optional)
+license_model = null
 
-# RDS Instance - Domain
-domain               = "corp.example.com"
-domain_iam_role_name = "rds-ad-domain-join-role"
+# Domain (SQL Server EE only, optional)
+domain               = null
+domain_iam_role_name = null
 
-# Rollback Configuration
+# --- module: rds_rollback ---
 rollback_enabled                   = false
 rollback_snapshot_identifier       = "rds:mydb-2024-03-18-14-30"
 rollback_stop_source_instance      = true

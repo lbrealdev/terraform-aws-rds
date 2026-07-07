@@ -9,7 +9,7 @@ variable "enabled" {
 }
 
 variable "engine" {
-  description = "The database engine to use (e.g., mysql, postgres)"
+  description = "The database engine to use (e.g., mariadb, mysql, postgres, sqlserver-web)"
   type        = string
 }
 
@@ -152,7 +152,7 @@ variable "iops" {
   default     = null
 
   validation {
-    condition     = var.iops == null || (
+    condition = var.iops == null || (
       (var.storage_type == "gp3" && var.iops >= 3000 && var.iops <= 16000) ||
       (contains(["io1", "io2"], var.storage_type) && var.iops >= 1000 && var.iops <= 64000)
     )

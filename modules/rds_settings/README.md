@@ -1,8 +1,12 @@
 # RDS Settings Module
 
-This Terraform module creates RDS Option Groups and Parameter Groups for different SQL Server versions.
+This Terraform module creates RDS Option Groups and Parameter Groups for SQL Server and MariaDB versions.
 
 ## Usage
+
+### Root stack usage
+
+In the root module, parameter and option groups are defined in [`locals.tf`](../../locals.tf) with stable keys (`v15`, `v16` for SQL Server; `v10`, `v11` for MariaDB). Set `rds_settings_active_key` in `.tfvars` to select which entry drives the running instance — root `main.tf` passes `module.rds_settings[active_key].engine_name` (and group names) to `rds_instance`. There is no separate engine variable at the root level.
 
 ### Creating a Single RDS Instance (Option 2)
 
@@ -20,7 +24,7 @@ module "rds_instance" {
   identifier = "${local.prefix_name}-v16"  # Results in: dev-v16
   
   # Required db_instance arguments
-  engine         = "sqlserver-web"
+  engine         = module.rds_settings["v16"].engine_name
   engine_version = "16.00"
   instance_class = "db.t3.micro"
   allocated_storage = 20
@@ -36,13 +40,18 @@ module "rds_instance" {
 
 ### Available Versions
 
-The module currently supports:
+**SQL Server Web**
 - `v15` - SQL Server 2019 (15.00)
 - `v16` - SQL Server 2022 (16.00)
+- `v17` - SQL Server 2022 (16.00, custom name example in root `locals.tf`)
+
+**MariaDB**
+- `v10` - MariaDB 10.11
+- `v11` - MariaDB 11.4
 
 To use a different version, reference it by key:
 - `module.rds_settings["v15"]` for SQL Server 2019
-- `module.rds_settings["v16"]` for SQL Server 2022
+- `module.rds_settings["v10"]` for MariaDB 10.11
 
 ### Module Outputs
 
@@ -60,23 +69,29 @@ module.rds_settings["v16"].option_group_id       # ID for references
 
 ### Root Module Outputs
 
+Keys shown below reflect the current root `locals.tf`; your map may include additional keys (e.g. `v10`, `v11` for MariaDB).
+
 When applied, these outputs are available:
 
 ```hcl
 rds_parameter_group_names = {
   "v15" = "dev-parameter-group-15"
   "v16" = "dev-parameter-group-16"
+  "v10" = "dev-parameter-group-10"
+  "v11" = "dev-parameter-group-11"
 }
 
 rds_option_group_names = {
   "v15" = "dev-option-group-15"
   "v16" = "dev-option-group-16"
+  "v10" = "dev-option-group-10"
+  "v11" = "dev-option-group-11"
 }
 ```
 
 ### Adding/Removing Versions
 
-To add or remove SQL Server versions, edit `locals.tf`:
+To add or remove version entries, edit `local.rds_settings` in `locals.tf`:
 
 ```hcl
 locals {
@@ -88,7 +103,7 @@ locals {
 }
 ```
 
-**Important:** Using `for_each` with stable keys (v15, v16) ensures that adding/removing versions doesn't recreate existing resources.
+**Important:** Using `for_each` with stable keys (e.g. `v15`, `v10`, `v11`) ensures that adding/removing versions doesn't recreate existing resources.
 
 ### Resource Naming Convention
 
@@ -102,7 +117,7 @@ Resources are named using the pattern:
 
 The `name` variable overrides `prefix` when provided (non-empty). If `name` is empty, `prefix` is used instead.
 
-The `major_engine_version` (e.g., "16.00") is cleaned to extract just the integer ("16") for naming.
+The suffix in resource names is the first segment of `major_engine_version` before `.` (e.g. `"16.00"` → `16`, `"10.11"` → `10`, `"11.4"` → `11`).
 
 ## Requirements
 

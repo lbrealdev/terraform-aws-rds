@@ -52,7 +52,13 @@ variable "db_instance_class" {
 }
 
 # RDS Instance - Engine
-variable "rds_engine_version" {
+variable "rds_settings_active_key" {
+  description = "Stable key in local.rds_settings for the running instance (e.g. v15, v16, v10, v11)"
+  type        = string
+  default     = "v15"
+}
+
+variable "db_engine_version" {
   description = "The engine version for the RDS instance"
   type        = string
   default     = "15.00.4198.2.v1"
