@@ -61,6 +61,25 @@ module "rds_instance" {
 }
 ```
 
+### MariaDB (root stack)
+
+Parameter and option groups for MariaDB are defined in `locals.tf` (`v10` for 10.11, `v11` for 11.4). Set `rds_settings_active_key` to select which entry drives the instance — engine and group names come from that key, not a separate engine variable.
+
+Example `.tfvars` for MariaDB 10.11:
+
+```hcl
+rds_settings_active_key = "v10"
+db_engine_version       = "10.11.10"
+db_instance_class       = "db.t3.small"
+db_allocated_storage    = 20
+
+license_model          = null
+domain                 = null
+domain_iam_role_name   = null
+```
+
+See [`terraform.tfvars.example`](terraform.tfvars.example) for a full commented profile.
+
 ## Configuration (Root Module)
 
 Key variables available in the root stack:
@@ -70,6 +89,7 @@ Key variables available in the root stack:
 | **Networking** | `vpc_id` | VPC ID where resources are deployed |
 | **Networking** | `db_subnet_group_name` | Name of the DB subnet group |
 | **Networking** | `security_group_names` | List of VPC security group names |
+| **Database** | `rds_settings_active_key` | Stable key in `locals.tf` for the running instance (e.g. `v15`, `v10`); drives engine and parameter/option groups |
 | **Database** | `db_username` | Master database username |
 | **Database** | `db_password` | Master database password |
 | **Database** | `db_engine_version` | Target engine version (e.g. full version to pin) |
@@ -86,7 +106,7 @@ Key variables available in the root stack:
 
 ## When to Use
 
-- **Safe Version Upgrades**: Upgrade SQL Server / MySQL / PostgreSQL with rollback options
+- **Safe Version Upgrades**: Upgrade SQL Server or MariaDB (and other engines) with rollback options
 - **Multi-Environment**: Standalone deployments for `dev`, `staging`, or `production`
 - **Testing**: Validate new engine versions before committing production users
 - **IaC Governance**: Standardized parameter and option group management with version control

@@ -116,7 +116,7 @@ module "rds_instance" {
 
   # RDS Instance Configuration
   identifier     = "${var.prefix_name}-v16"
-  engine         = "sqlserver-web"
+  engine         = module.rds_settings["v16"].engine_name
   engine_version = "16.00"
   instance_class = "db.t3.micro"
 
@@ -146,6 +146,33 @@ module "rds_instance" {
 }
 ```
 
+### MariaDB with RDS Settings Module
+
+```hcl
+module "rds_instance" {
+  source = "./modules/rds_instance"
+
+  enabled = true
+
+  parameter_group_name = module.rds_settings["v10"].parameter_group_name
+  option_group_name    = module.rds_settings["v10"].option_group_name
+
+  identifier     = "${var.prefix_name}-mariadb"
+  engine         = module.rds_settings["v10"].engine_name
+  engine_version = "10.11.10"
+  instance_class = "db.t3.small"
+
+  username = "admin"
+  password = var.db_password
+
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  allocated_storage = 20
+  storage_type      = "gp3"
+}
+```
+
 ## Requirements
 
 | Name | Version |
@@ -161,7 +188,7 @@ module "rds_instance" {
 |------|-------------|------|
 | `enabled` | Enable or disable the RDS instance creation | `bool` |
 | `identifier` | The name of the RDS instance | `string` |
-| `engine` | The database engine to use (e.g., mysql, postgres, sqlserver-web) | `string` |
+| `engine` | The database engine to use (e.g., mariadb, mysql, postgres, sqlserver-web) | `string` |
 | `engine_version` | The engine version to use | `string` |
 | `instance_class` | The instance type of the RDS instance | `string` |
 | `username` | Username for the master DB user | `string` |
@@ -208,6 +235,7 @@ module "rds_instance" {
 - **Apply Immediately:** Changes are deferred to the maintenance window by default. Set `apply_immediately = true` for immediate changes (may cause brief downtime).
 - **Version Upgrades:** Use `allow_major_version_upgrade` and `auto_minor_version_upgrade` to control upgrade behavior.
 - **Engine Versions:** You can specify either partial versions (e.g., `"15.00"`) for automatic latest patch selection, or full versions (e.g., `"15.00.4198.2.v1"`) for immutable deployments. See the main README for detailed version management guidance.
+- **SQL Server–only variables:** `license_model`, `domain`, and `domain_iam_role_name` apply to SQL Server only. Leave them unset or `null` for MariaDB and other engines.
 
 ## License
 

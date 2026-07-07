@@ -4,6 +4,10 @@ This Terraform module creates RDS Option Groups and Parameter Groups for SQL Ser
 
 ## Usage
 
+### Root stack usage
+
+In the root module, parameter and option groups are defined in [`locals.tf`](../../locals.tf) with stable keys (`v15`, `v16` for SQL Server; `v10`, `v11` for MariaDB). Set `rds_settings_active_key` in `.tfvars` to select which entry drives the running instance — root `main.tf` passes `module.rds_settings[active_key].engine_name` (and group names) to `rds_instance`. There is no separate engine variable at the root level.
+
 ### Creating a Single RDS Instance (Option 2)
 
 To create a single RDS instance using a specific version (e.g., SQL Server 2022 / v16):
@@ -20,7 +24,7 @@ module "rds_instance" {
   identifier = "${local.prefix_name}-v16"  # Results in: dev-v16
   
   # Required db_instance arguments
-  engine         = "sqlserver-web"
+  engine         = module.rds_settings["v16"].engine_name
   engine_version = "16.00"
   instance_class = "db.t3.micro"
   allocated_storage = 20
@@ -73,11 +77,15 @@ When applied, these outputs are available:
 rds_parameter_group_names = {
   "v15" = "dev-parameter-group-15"
   "v16" = "dev-parameter-group-16"
+  "v10" = "dev-parameter-group-10"
+  "v11" = "dev-parameter-group-11"
 }
 
 rds_option_group_names = {
   "v15" = "dev-option-group-15"
   "v16" = "dev-option-group-16"
+  "v10" = "dev-option-group-10"
+  "v11" = "dev-option-group-11"
 }
 ```
 
