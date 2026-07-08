@@ -31,6 +31,28 @@ alias refresh := tf-refresh
     mise ls --json | jq -r --arg pwd "$(pwd)" 'to_entries[] | select(.value[].source.path != null and (.value[].source.path | contains($pwd))) | .key'
 
 # ============================================================================
+# Configuration
+# ============================================================================
+
+# Scaffold terraform.tfvars from an engine example (sqlserver|mariadb)
+use-config engine:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    src="examples/{{engine}}.tfvars.example"
+    if [ ! -f "$src" ]; then
+        echo "Unknown engine: {{engine}}"
+        echo "Available:"
+        ls examples/*.tfvars.example
+        exit 1
+    fi
+    if [ -f terraform.tfvars ]; then
+        echo "terraform.tfvars already exists — remove it first or edit in place."
+        exit 1
+    fi
+    cp "$src" terraform.tfvars
+    echo "Created terraform.tfvars from $src — edit it before plan/apply."
+
+# ============================================================================
 # Terraform recipes
 # ============================================================================
 

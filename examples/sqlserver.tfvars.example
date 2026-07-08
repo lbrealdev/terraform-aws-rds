@@ -9,20 +9,9 @@ db_subnet_group_name = "your-db-subnet-group"
 security_group_names = ["your-security-group-1", "your-security-group-2"]
 
 # --- module: rds_settings ---
-# Parameter/option group map is in locals.tf — keys: v15, v16, v17, v10, v11
+# Parameter/option group map is in locals.tf — keys: v15, v16, v17
 rds_settings_active_key = "v15"
 rds_settings_tags       = {}
-
-# MariaDB example (uncomment and comment out SQL Server defaults above):
-# rds_settings_active_key = "v10"              # or "v11" for MariaDB 11.4
-# db_engine_version       = "10.11.10"         # full AWS engine version string
-# db_instance_class       = "db.t3.small"
-# db_allocated_storage    = 20                   # MariaDB minimum
-# db_instance_storage_type       = "gp3"
-# db_instance_storage_throughput = 300
-# license_model          = null                  # SQL Server only
-# domain                 = null                  # SQL Server EE only
-# domain_iam_role_name   = null                  # SQL Server EE only
 
 # --- module: rds_instance ---
 
@@ -52,7 +41,7 @@ db_instance_max_allocated_storage = null # Storage autoscaling: set >= allocated
 db_instance_storage_encrypted     = false
 db_instance_kms_key_id            = null # Custom KMS key ARN when storage_encrypted = true
 
-# License (SQL Server only, optional)
+# License (optional)
 license_model = null
 
 # Domain (SQL Server EE only, optional)
