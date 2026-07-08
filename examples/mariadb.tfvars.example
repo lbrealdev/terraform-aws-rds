@@ -26,7 +26,7 @@ db_engine_version = "10.11.10"
 db_apply_immediately           = true
 db_allow_major_version_upgrade = true
 db_auto_minor_version_upgrade  = true
-db_skip_final_snapshot         = false
+db_skip_final_snapshot         = true
 
 # User
 db_username = "admin"

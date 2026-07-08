@@ -38,9 +38,9 @@ alias refresh := tf-refresh
 use-config engine:
     #!/usr/bin/env bash
     set -euo pipefail
-    src="examples/{{engine}}.tfvars.example"
+    src="examples/{{ engine }}.tfvars.example"
     if [ ! -f "$src" ]; then
-        echo "Unknown engine: {{engine}}"
+        echo "Unknown engine: {{ engine }}"
         echo "Available:"
         ls examples/*.tfvars.example
         exit 1
