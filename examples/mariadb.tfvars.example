@@ -35,8 +35,8 @@ db_password = "your-secure-password"
 # Storage
 db_allocated_storage              = 20
 db_instance_storage_type          = "gp3" # Options: standard, gp2, gp3, io1, io2
-db_instance_storage_throughput    = 300  # Required for gp3: 125-1000 MB/s (recommended: 300+)
-db_instance_iops                  = null # Optional for gp3: 3000-16000; required for io1/io2: 1000-64000
+db_instance_storage_throughput    = null # Required for gp3 with 400GB+ storage: 125-1000 MB/s
+db_instance_iops                  = null # Optional for gp3 with 400GB+ storage; required for io1/io2: 1000-64000
 db_instance_max_allocated_storage = null # Storage autoscaling: set >= allocated_storage to enable
 db_instance_storage_encrypted     = false
 db_instance_kms_key_id            = null # Custom KMS key ARN when storage_encrypted = true
