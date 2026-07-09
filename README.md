@@ -18,7 +18,13 @@ Terraform module stack for deploying AWS RDS instances with **zero-downtime upgr
 > Install [mise](https://mise.jdx.dev), run **`mise trust`** once to trust [`mise.toml`](./mise.toml), then **`mise install`** from the repo root to install the full toolchain (`terraform`, `just`, `aws`, `terraform-docs`).
 > If you already manage tools yourself, you only need `just` (plus whatever each recipe requires).
 
-1. Configure required variables (see `variables.tf`)
+1. Scaffold local config from an engine example:
+
+```bash
+just use-config sqlserver   # or: just use-config mariadb
+# edit terraform.tfvars with your VPC, subnets, credentials, etc.
+```
+
 2. Run:
 
 ```bash
@@ -78,7 +84,7 @@ domain                 = null
 domain_iam_role_name   = null
 ```
 
-See [`terraform.tfvars.example`](terraform.tfvars.example) for a full commented profile.
+See [`examples/sqlserver.tfvars.example`](examples/sqlserver.tfvars.example) and [`examples/mariadb.tfvars.example`](examples/mariadb.tfvars.example) for full commented profiles.
 
 ## Configuration (Root Module)
 
