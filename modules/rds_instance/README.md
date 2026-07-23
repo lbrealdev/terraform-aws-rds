@@ -177,7 +177,7 @@ module "rds_instance" {
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.0 |
+| terraform | >= 1.2 |
 | aws | >= 5.0 |
 
 ## Variables
@@ -236,6 +236,7 @@ module "rds_instance" {
 - **Version Upgrades:** Use `allow_major_version_upgrade` and `auto_minor_version_upgrade` to control upgrade behavior.
 - **Engine Versions:** You can specify either partial versions (e.g., `"15.00"`) for automatic latest patch selection, or full versions (e.g., `"15.00.4198.2.v1"`) for immutable deployments. See the main README for detailed version management guidance.
 - **SQL Server–only variables:** `license_model`, `domain`, and `domain_iam_role_name` apply to SQL Server only. Leave them unset or `null` for MariaDB and other engines.
+- **Instance class floors:** Invalid SQL Server Enterprise/Standard + undersized `instance_class` combinations (e.g. `sqlserver-ee` + `db.t3.medium`) fail at plan via a resource precondition.
 
 ## License
 

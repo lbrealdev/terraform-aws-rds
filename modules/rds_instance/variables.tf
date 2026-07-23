@@ -9,7 +9,7 @@ variable "enabled" {
 }
 
 variable "engine" {
-  description = "The database engine to use (e.g., mariadb, mysql, postgres, sqlserver-web)"
+  description = "The database engine to use (e.g., mariadb, mysql, postgres, sqlserver-web). For SQL Server Enterprise (sqlserver-ee) and Standard (sqlserver-se), instance_class must meet AWS edition minimum sizes."
   type        = string
 }
 
@@ -19,7 +19,7 @@ variable "engine_version" {
 }
 
 variable "instance_class" {
-  description = "The instance type of the RDS instance"
+  description = "The instance type of the RDS instance. SQL Server Enterprise requires xlarge or larger (e.g. db.t3.xlarge); Standard requires xlarge+ for burstable (db.t*) classes and large+ otherwise. Web/Express allow smaller classes such as db.t3.medium."
   type        = string
 }
 

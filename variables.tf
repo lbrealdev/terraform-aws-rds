@@ -46,7 +46,7 @@ variable "db_instance_enabled" {
 }
 
 variable "db_instance_class" {
-  description = "The instance type of the RDS instance"
+  description = "The instance type of the RDS instance. Default db.t3.medium suits SQL Server Web/Express and MariaDB; Enterprise requires xlarge+ (e.g. db.t3.xlarge), Standard requires xlarge+ for burstable (db.t*) classes and large+ otherwise."
   type        = string
   default     = "db.t3.medium"
 }
@@ -190,7 +190,7 @@ variable "rollback_identifier" {
 }
 
 variable "rollback_instance_class" {
-  description = "The instance type for the rollback RDS instance"
+  description = "The instance type for the rollback RDS instance. Same edition size floors as db_instance_class (Enterprise: xlarge+; Standard: xlarge+ for db.t*, large+ otherwise)."
   type        = string
   default     = "db.t3.medium"
 }
