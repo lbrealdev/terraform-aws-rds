@@ -38,7 +38,7 @@ Issue → Branch → Implement → PR → Review → Merge to main
 
 ### Code style
 
-- Terraform `>= 1.0`, AWS provider `>= 6.0`
+- Terraform `>= 1.2`, AWS provider `>= 6.0`
 - Run `just fmt` before committing
 - Keep version setting keys stable (`v15`/`v16`/`v17` for SQL Server; `v10`/`v11` for MariaDB) to avoid resource recreation
 - Networking is looked up, not created — assume VPC/subnet group/SGs pre-exist

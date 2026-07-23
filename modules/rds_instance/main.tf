@@ -28,4 +28,11 @@ resource "aws_db_instance" "rds" {
   license_model               = var.license_model
   domain                      = var.domain
   domain_iam_role_name        = var.domain_iam_role_name
+
+  lifecycle {
+    precondition {
+      condition     = local.sqlserver_instance_class_ok
+      error_message = "Invalid combination: engine=${var.engine} with instance_class=${var.instance_class}. SQL Server Enterprise requires size xlarge or larger; Standard requires xlarge+ for burstable (db.t*) classes and large+ otherwise. See https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/SQLServer.Concepts.General.InstanceClasses.html"
+    }
+  }
 }

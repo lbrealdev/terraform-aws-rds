@@ -17,6 +17,27 @@ Use these tables to pick the correct `family`, `engine_name`, and `major_engine_
 | Enterprise | `sqlserver-ee-16.0` | `sqlserver-ee` | `16.00` |
 | Express | `sqlserver-ex-15.0` | `sqlserver-ex` | `15.00` |
 
+### SQL Server instance class floors
+
+Edition and instance class must be a supported AWS combination. This stack fails at plan time (in `rds_instance`) for known undersized classes:
+
+| Engine | Minimum size floor |
+|--------|--------------------|
+| `sqlserver-ee` | `xlarge` or larger (e.g. `db.t3.xlarge`, `db.m5.xlarge`) |
+| `sqlserver-se` | Burstable `db.t*`: `xlarge+`; other families: `large+` |
+| `sqlserver-web` / `sqlserver-ex` | Smaller classes such as `db.t3.medium` are allowed |
+
+This is not the full region/version orderable matrix. Confirm exact options with:
+
+```bash
+aws rds describe-orderable-db-instance-options \
+  --engine sqlserver-ee \
+  --db-instance-class db.t3.medium \
+  --query 'length(OrderableDBInstanceOptions)'
+```
+
+See [DB instance class support for Microsoft SQL Server](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/SQLServer.Concepts.General.InstanceClasses.html).
+
 ### MySQL
 
 | Family | Engine | Major version |
