@@ -54,6 +54,7 @@ just validate      # validate configuration
 just fmt           # format .tf files
 just plan          # plan (needs AWS creds + existing network)
 just apply         # apply
+just cleanup       # remove local Terraform artifacts (prompts; does not destroy cloud resources)
 ```
 
 ## Cloud agent environments
