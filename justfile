@@ -14,6 +14,7 @@ alias fmt := tf-lint
 alias validate := tf-check
 alias docs := tf-docs
 alias init := tf-init
+alias cleanup := tf-cleanup
 alias list := tf-list
 alias show := tf-show
 alias refresh := tf-refresh
@@ -59,6 +60,13 @@ use-config engine:
 # Initialize Terraform (providers/modules/backend)
 @tf-init *var:
     terraform init {{ var }}
+
+# Remove local Terraform artifacts (.terraform, plan files, crash logs, local state)
+[confirm("Remove local Terraform artifacts (.terraform, plan/destroy files, crash logs, local state)? This does not destroy cloud resources.")]
+@tf-cleanup:
+    rm -rf .terraform
+    rm -f plan destroy crash.log crash.*.log *.tfstate *.tfstate.*
+    echo "Local Terraform artifacts removed."
 
 # Create a plan and save it to a file
 @tf-plan *var:

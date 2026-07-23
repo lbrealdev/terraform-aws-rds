@@ -32,6 +32,7 @@ just init
 just plan
 # review plan
 just apply
+# later: just cleanup  # remove local .terraform / plan files (prompts; does not destroy cloud resources)
 ```
 
 ### Minimal Example
