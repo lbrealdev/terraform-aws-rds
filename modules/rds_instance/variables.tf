@@ -191,3 +191,19 @@ variable "multi_az" {
   type        = bool
   default     = false
 }
+
+variable "backup_retention_period" {
+  description = "Days to retain automated backups (0-35). Default 0 disables automated backups. Must be >= 1 when multi_az is true (required for SQL Server Mirroring/Always On)."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.backup_retention_period >= 0 && var.backup_retention_period <= 35
+    error_message = "backup_retention_period must be between 0 and 35."
+  }
+
+  validation {
+    condition     = !var.multi_az || var.backup_retention_period >= 1
+    error_message = "backup_retention_period must be >= 1 when multi_az is true (SQL Server Mirroring/Always On requires automated backups)."
+  }
+}

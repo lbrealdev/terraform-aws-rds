@@ -212,6 +212,7 @@ module "rds_instance" {
 | `auto_minor_version_upgrade` | Apply minor upgrades automatically | `bool` | `null` |
 | `apply_immediately` | Apply changes immediately or during maintenance window | `bool` | `null` |
 | `multi_az` | Specifies if the RDS instance is multi-AZ | `bool` | `false` |
+| `backup_retention_period` | Days to retain automated backups (0–35; must be ≥ 1 when `multi_az` is true) | `number` | `0` |
 | `tags` | A map of tags to add to all resources | `map(string)` | `{}` |
 
 ## Outputs
@@ -239,7 +240,8 @@ module "rds_instance" {
 - **Engine Versions:** You can specify either partial versions (e.g., `"15.00"`) for automatic latest patch selection, or full versions (e.g., `"15.00.4198.2.v1"`) for immutable deployments. See the main README for detailed version management guidance.
 - **SQL Server–only variables:** `license_model`, `domain`, and `domain_iam_role_name` apply to SQL Server only. Leave them unset or `null` for MariaDB and other engines.
 - **Instance class floors:** Invalid SQL Server Enterprise/Standard + undersized `instance_class` combinations (e.g. `sqlserver-ee` + `db.t3.medium`) fail at plan via a resource precondition.
-- **Multi-AZ:** Set `multi_az = true` for a standby replica in another Availability Zone. The DB subnet group must span at least two AZs.
+- **Multi-AZ:** Set `multi_az = true` for a standby replica in another Availability Zone. The DB subnet group must span at least two AZs. For SQL Server, Multi-AZ uses Mirroring/Always On and requires `backup_retention_period >= 1` (validation fails if retention is 0).
+- **Backups:** `backup_retention_period` defaults to `0` (automated backups disabled). Set a value between 1 and 35 to enable automated backups / PITR.
 
 ## References
 

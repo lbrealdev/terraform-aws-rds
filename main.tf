@@ -39,10 +39,11 @@ module "rds_instance" {
   source = "./modules/rds_instance"
 
   # --- Instance ---
-  enabled        = var.db_instance_enabled
-  identifier     = format("rds-%s-db-instance-test", var.prefix_name)
-  instance_class = var.db_instance_class
-  multi_az       = var.db_multi_az
+  enabled                 = var.db_instance_enabled
+  identifier              = format("rds-%s-db-instance-test", var.prefix_name)
+  instance_class          = var.db_instance_class
+  multi_az                = var.db_multi_az
+  backup_retention_period = var.db_backup_retention_period
 
   # --- Engine ---
   engine         = module.rds_settings[local.rds_settings_active_key].engine_name
@@ -107,6 +108,7 @@ module "rds_rollback" {
   final_snapshot_identifier = var.rollback_final_snapshot_identifier
   apply_immediately         = var.rollback_apply_immediately
   multi_az                  = var.db_multi_az
+  backup_retention_period   = var.db_backup_retention_period
 
   tags = {
     Purpose = "rollback"

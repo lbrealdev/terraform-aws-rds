@@ -57,6 +57,22 @@ variable "db_multi_az" {
   default     = false
 }
 
+variable "db_backup_retention_period" {
+  description = "Days to retain automated backups (0-35). Default 0 disables automated backups. Must be >= 1 when db_multi_az is true (required for SQL Server Mirroring/Always On)."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.db_backup_retention_period >= 0 && var.db_backup_retention_period <= 35
+    error_message = "db_backup_retention_period must be between 0 and 35."
+  }
+
+  validation {
+    condition     = !var.db_multi_az || var.db_backup_retention_period >= 1
+    error_message = "db_backup_retention_period must be >= 1 when db_multi_az is true (SQL Server Mirroring/Always On requires automated backups)."
+  }
+}
+
 # RDS Instance - Engine
 variable "rds_settings_active_key" {
   description = "Stable key in local.rds_settings for the running instance (e.g. v15, v16, v10, v11)"

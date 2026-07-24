@@ -19,6 +19,8 @@ rds_settings_tags       = {}
 db_instance_enabled = true
 db_instance_class   = "db.t3.small"
 db_multi_az         = false
+# Required when db_multi_az = true: set >= 1, e.g. 7
+db_backup_retention_period = 0
 
 # Engine
 db_engine_version = "10.11.10"

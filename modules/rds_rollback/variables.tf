@@ -129,6 +129,12 @@ variable "multi_az" {
   default     = false
 }
 
+variable "backup_retention_period" {
+  description = "Days to retain automated backups (0-35). Must be >= 1 when multi_az is true."
+  type        = number
+  default     = 0
+}
+
 variable "vpc_security_group_ids" {
   description = "List of VPC security groups to associate"
   type        = list(string)
