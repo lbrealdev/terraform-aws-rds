@@ -42,6 +42,7 @@ module "rds_instance" {
   enabled        = var.db_instance_enabled
   identifier     = format("rds-%s-db-instance-test", var.prefix_name)
   instance_class = var.db_instance_class
+  multi_az       = var.db_multi_az
 
   # --- Engine ---
   engine         = module.rds_settings[local.rds_settings_active_key].engine_name
@@ -104,6 +105,7 @@ module "rds_rollback" {
   skip_final_snapshot       = var.rollback_skip_final_snapshot
   final_snapshot_identifier = var.rollback_final_snapshot_identifier
   apply_immediately         = var.rollback_apply_immediately
+  multi_az                  = var.db_multi_az
 
   tags = {
     Purpose = "rollback"

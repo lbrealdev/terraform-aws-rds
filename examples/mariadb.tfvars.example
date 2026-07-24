@@ -18,6 +18,7 @@ rds_settings_tags       = {}
 # Instance
 db_instance_enabled = true
 db_instance_class   = "db.t3.small"
+db_multi_az         = false
 
 # Engine
 db_engine_version = "10.11.10"

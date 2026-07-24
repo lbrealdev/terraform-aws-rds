@@ -101,6 +101,7 @@ Key variables available in the root stack:
 | **Database** | `db_password` | Master database password |
 | **Database** | `db_engine_version` | Target engine version (e.g. full version to pin) |
 | **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) |
+| **Database** | `db_multi_az` | Enable Multi-AZ deployment (default `false`) |
 | **Database** | `db_allocated_storage` | Allocated storage in gigabytes |
 | **Storage** | `db_instance_storage_type` | Storage type: gp2 (default), gp3, io1, io2, standard |
 | **Storage** | `db_instance_storage_throughput` | Throughput for gp3 (125-1000 MB/s) |

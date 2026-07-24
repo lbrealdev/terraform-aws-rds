@@ -177,3 +177,9 @@ variable "kms_key_id" {
   type        = string
   default     = null
 }
+
+variable "multi_az" {
+  description = "Specifies if the RDS instance is multi-AZ"
+  type        = bool
+  default     = false
+}

@@ -28,6 +28,7 @@ resource "aws_db_instance" "rds" {
   license_model               = var.license_model
   domain                      = var.domain
   domain_iam_role_name        = var.domain_iam_role_name
+  multi_az                    = var.multi_az
 
   lifecycle {
     precondition {
