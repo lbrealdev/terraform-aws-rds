@@ -25,6 +25,7 @@ module "rds_instance" {
   vpc_security_group_ids      = var.vpc_security_group_ids
   tags                        = var.tags
   snapshot_identifier         = var.snapshot_identifier
+  multi_az                    = var.multi_az
 }
 
 # Stop the source instance after rollback is created

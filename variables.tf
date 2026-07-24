@@ -51,6 +51,12 @@ variable "db_instance_class" {
   default     = "db.t3.medium"
 }
 
+variable "db_multi_az" {
+  description = "Specifies if the RDS instance is multi-AZ"
+  type        = bool
+  default     = false
+}
+
 # RDS Instance - Engine
 variable "rds_settings_active_key" {
   description = "Stable key in local.rds_settings for the running instance (e.g. v15, v16, v10, v11)"

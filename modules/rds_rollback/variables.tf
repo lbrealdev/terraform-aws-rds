@@ -123,6 +123,12 @@ variable "apply_immediately" {
   default     = null
 }
 
+variable "multi_az" {
+  description = "Specifies if the RDS instance is multi-AZ"
+  type        = bool
+  default     = false
+}
+
 variable "vpc_security_group_ids" {
   description = "List of VPC security groups to associate"
   type        = list(string)

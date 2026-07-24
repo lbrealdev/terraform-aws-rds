@@ -223,6 +223,7 @@ resource "aws_rds_instance_state" "manual_stop" {
 | `skip_final_snapshot` | Skip final snapshot | `bool` | `true` | No |
 | `final_snapshot_identifier` | Name of final snapshot (required if skip_final_snapshot is false) | `string` | `null` | No |
 | `apply_immediately` | Apply changes immediately | `bool` | `null` | No |
+| `multi_az` | Specifies if the RDS instance is multi-AZ | `bool` | `false` | No |
 | `allow_major_version_upgrade` | Allow major version upgrades | `bool` | `null` | No |
 | `auto_minor_version_upgrade` | Auto minor version upgrades | `bool` | `null` | No |
 | `tags` | Map of tags | `map(string)` | `{}` | No |
