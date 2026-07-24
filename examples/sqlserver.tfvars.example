@@ -28,6 +28,8 @@ db_apply_immediately           = true
 db_allow_major_version_upgrade = true
 db_auto_minor_version_upgrade  = true
 db_skip_final_snapshot         = true
+# Required when db_skip_final_snapshot = false:
+# db_final_snapshot_identifier = "mydb-final-snapshot"
 
 # User
 db_username = "admin"

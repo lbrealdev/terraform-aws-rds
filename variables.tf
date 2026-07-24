@@ -95,6 +95,20 @@ variable "db_skip_final_snapshot" {
   default     = false
 }
 
+variable "db_final_snapshot_identifier" {
+  description = "The name of your final DB snapshot when the RDS instance is deleted. Required if db_skip_final_snapshot is false"
+  type        = string
+  default     = null
+
+  validation {
+    condition = var.db_skip_final_snapshot || (
+      var.db_final_snapshot_identifier != null &&
+      length(var.db_final_snapshot_identifier) > 0
+    )
+    error_message = "db_final_snapshot_identifier is required when db_skip_final_snapshot is false."
+  }
+}
+
 # RDS Instance - User
 variable "db_username" {
   description = "Username for the master DB user"

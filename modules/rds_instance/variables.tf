@@ -60,6 +60,14 @@ variable "final_snapshot_identifier" {
   description = "The name of your final DB snapshot when this DB instance is deleted. Must be provided if skip_final_snapshot is false"
   type        = string
   default     = null
+
+  validation {
+    condition = var.skip_final_snapshot || (
+      var.final_snapshot_identifier != null &&
+      length(var.final_snapshot_identifier) > 0
+    )
+    error_message = "final_snapshot_identifier is required when skip_final_snapshot is false."
+  }
 }
 
 variable "option_group_name" {

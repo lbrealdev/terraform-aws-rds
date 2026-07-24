@@ -61,6 +61,7 @@ module "rds_instance" {
   allow_major_version_upgrade = var.db_allow_major_version_upgrade
   auto_minor_version_upgrade  = var.db_auto_minor_version_upgrade
   skip_final_snapshot         = var.db_skip_final_snapshot
+  final_snapshot_identifier   = var.db_final_snapshot_identifier
 
   # --- User ---
   username = var.db_username
