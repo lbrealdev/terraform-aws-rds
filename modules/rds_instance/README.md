@@ -204,6 +204,7 @@ module "rds_instance" {
 | `storage_throughput` | Throughput for gp3 (125-1000 MB/s) | `number` | `null` |
 | `iops` | Provisioned IOPS for io1/io2 (1000-64000) | `number` | `null` |
 | `skip_final_snapshot` | Skip final snapshot before deletion | `bool` | `true` |
+| `final_snapshot_identifier` | Final snapshot name (required if `skip_final_snapshot` is false) | `string` | `null` |
 | `vpc_security_group_ids` | List of VPC security groups to associate | `list(string)` | `[]` |
 | `option_group_name` | Name of the DB option group to associate | `string` | `null` |
 | `parameter_group_name` | Name of the DB parameter group to associate | `string` | `null` |
@@ -232,7 +233,7 @@ module "rds_instance" {
 
 - **Enabled Toggle:** Set `enabled = false` to create the module without deploying an actual RDS instance. This is useful for testing `rds_settings` module without provisioning database resources.
 - **Security:** The `password` variable is marked as sensitive to prevent it from appearing in logs and CLI output.
-- **Final Snapshots:** By default, `skip_final_snapshot` is set to `true` for easier deletion during development. Set to `false` for production to prevent data loss.
+- **Final Snapshots:** By default, `skip_final_snapshot` is set to `true` for easier deletion during development. Set to `false` for production to prevent data loss, and provide `final_snapshot_identifier` (validation fails if it is missing).
 - **Apply Immediately:** Changes are deferred to the maintenance window by default. Set `apply_immediately = true` for immediate changes (may cause brief downtime).
 - **Version Upgrades:** Use `allow_major_version_upgrade` and `auto_minor_version_upgrade` to control upgrade behavior.
 - **Engine Versions:** You can specify either partial versions (e.g., `"15.00"`) for automatic latest patch selection, or full versions (e.g., `"15.00.4198.2.v1"`) for immutable deployments. See the main README for detailed version management guidance.
