@@ -225,6 +225,7 @@ resource "aws_rds_instance_state" "manual_stop" {
 | `apply_immediately` | Apply changes immediately | `bool` | `null` | No |
 | `multi_az` | Specifies if the RDS instance is multi-AZ | `bool` | `false` | No |
 | `backup_retention_period` | Days to retain automated backups (must be ≥ 1 when multi_az is true) | `number` | `0` | No |
+| `publicly_accessible` | Whether the rollback DB instance is publicly accessible | `bool` | `false` | No |
 | `allow_major_version_upgrade` | Allow major version upgrades | `bool` | `null` | No |
 | `auto_minor_version_upgrade` | Auto minor version upgrades | `bool` | `null` | No |
 | `tags` | Map of tags | `map(string)` | `{}` | No |

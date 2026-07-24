@@ -16,18 +16,19 @@ rds_settings_tags       = {}
 # --- module: rds_instance ---
 
 # Instance
-db_instance_enabled = true
-db_instance_class   = "db.t3.medium"
-db_multi_az         = false
+db_instance_enabled    = true
+db_instance_class      = "db.t3.medium"
+db_multi_az            = false
+db_publicly_accessible = false # Safer default; set true only if you need a public endpoint
 # Required when db_multi_az = true (SQL Server Mirroring/Always On): set >= 1, e.g. 7
 db_backup_retention_period = 0
 
 # Engine
 db_engine_version = "15.00.4198.2.v1"
 
-# Maintenance
-db_apply_immediately           = true
-db_allow_major_version_upgrade = true
+# Maintenance (safer defaults; set apply_immediately / allow_major_version_upgrade = true for faster iteration)
+db_apply_immediately           = false
+db_allow_major_version_upgrade = false
 db_auto_minor_version_upgrade  = true
 db_skip_final_snapshot         = true
 # Required when db_skip_final_snapshot = false:
@@ -43,8 +44,8 @@ db_instance_storage_type          = "gp3" # Options: standard, gp2, gp3, io1, io
 db_instance_storage_throughput    = 300  # Required for gp3: 125-1000 MB/s (recommended: 300+)
 db_instance_iops                  = null # Optional for gp3: 3000-16000; required for io1/io2: 1000-64000
 db_instance_max_allocated_storage = null # Storage autoscaling: set >= allocated_storage to enable
-db_instance_storage_encrypted     = false
-db_instance_kms_key_id            = null # Custom KMS key ARN when storage_encrypted = true
+db_instance_storage_encrypted     = true # Uses aws/rds when kms_key_id is null
+db_instance_kms_key_id            = null # Optional customer-managed KMS key ARN
 
 # License (optional)
 license_model = null

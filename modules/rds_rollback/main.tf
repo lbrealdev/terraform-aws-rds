@@ -27,6 +27,7 @@ module "rds_instance" {
   snapshot_identifier         = var.snapshot_identifier
   multi_az                    = var.multi_az
   backup_retention_period     = var.backup_retention_period
+  publicly_accessible         = var.publicly_accessible
 }
 
 # Stop the source instance after rollback is created
