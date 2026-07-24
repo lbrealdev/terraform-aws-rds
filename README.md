@@ -102,6 +102,7 @@ Key variables available in the root stack:
 | **Database** | `db_engine_version` | Target engine version (e.g. full version to pin) |
 | **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) |
 | **Database** | `db_multi_az` | Enable Multi-AZ deployment (default `false`) |
+| **Database** | `db_backup_retention_period` | Automated backup retention days 0–35 (default `0`; must be ≥ 1 with Multi-AZ) |
 | **Database** | `db_skip_final_snapshot` | Skip final snapshot before deletion (default `false`) |
 | **Database** | `db_final_snapshot_identifier` | Final snapshot name (required when skip is `false`) |
 | **Database** | `db_allocated_storage` | Allocated storage in gigabytes |
