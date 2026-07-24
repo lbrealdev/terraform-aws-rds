@@ -213,6 +213,8 @@ module "rds_instance" {
 | `apply_immediately` | Apply changes immediately or during maintenance window | `bool` | `null` |
 | `multi_az` | Specifies if the RDS instance is multi-AZ | `bool` | `false` |
 | `backup_retention_period` | Days to retain automated backups (0–35; must be ≥ 1 when `multi_az` is true) | `number` | `0` |
+| `publicly_accessible` | Whether the DB instance is publicly accessible | `bool` | `false` |
+| `storage_encrypted` | Encrypt storage at rest (uses `aws/rds` when `kms_key_id` is null) | `bool` | `true` |
 | `tags` | A map of tags to add to all resources | `map(string)` | `{}` |
 
 ## Outputs
@@ -235,7 +237,9 @@ module "rds_instance" {
 - **Enabled Toggle:** Set `enabled = false` to create the module without deploying an actual RDS instance. This is useful for testing `rds_settings` module without provisioning database resources.
 - **Security:** The `password` variable is marked as sensitive to prevent it from appearing in logs and CLI output.
 - **Final Snapshots:** By default, `skip_final_snapshot` is set to `true` for easier deletion during development. Set to `false` for production to prevent data loss, and provide `final_snapshot_identifier` (validation fails if it is missing).
-- **Apply Immediately:** Changes are deferred to the maintenance window by default. Set `apply_immediately = true` for immediate changes (may cause brief downtime).
+- **Apply Immediately:** When set (or via the root stack default of `false`), changes are deferred to the maintenance window. Set `apply_immediately = true` for immediate changes (may cause brief downtime).
+- **Encryption:** `storage_encrypted` defaults to `true`. Leave `kms_key_id` unset to use the account default `aws/rds` key, or pass a customer-managed CMK ARN.
+- **Public access:** `publicly_accessible` defaults to `false`. Set `true` only when a public endpoint is required.
 - **Version Upgrades:** Use `allow_major_version_upgrade` and `auto_minor_version_upgrade` to control upgrade behavior.
 - **Engine Versions:** You can specify either partial versions (e.g., `"15.00"`) for automatic latest patch selection, or full versions (e.g., `"15.00.4198.2.v1"`) for immutable deployments. See the main README for detailed version management guidance.
 - **SQL Server–only variables:** `license_model`, `domain`, and `domain_iam_role_name` apply to SQL Server only. Leave them unset or `null` for MariaDB and other engines.

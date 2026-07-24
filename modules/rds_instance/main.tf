@@ -30,6 +30,7 @@ resource "aws_db_instance" "rds" {
   domain_iam_role_name        = var.domain_iam_role_name
   multi_az                    = var.multi_az
   backup_retention_period     = var.backup_retention_period
+  publicly_accessible         = var.publicly_accessible
 
   lifecycle {
     precondition {

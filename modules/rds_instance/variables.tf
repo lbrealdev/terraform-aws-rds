@@ -175,9 +175,9 @@ variable "max_allocated_storage" {
 }
 
 variable "storage_encrypted" {
-  description = "Specifies whether the DB instance is encrypted. The default is false if not specified."
+  description = "Specifies whether the DB instance is encrypted. Defaults to true. When true and kms_key_id is null, AWS uses the account default aws/rds key."
   type        = bool
-  default     = null
+  default     = true
 }
 
 variable "kms_key_id" {
@@ -206,4 +206,10 @@ variable "backup_retention_period" {
     condition     = !var.multi_az || var.backup_retention_period >= 1
     error_message = "backup_retention_period must be >= 1 when multi_az is true (SQL Server Mirroring/Always On requires automated backups)."
   }
+}
+
+variable "publicly_accessible" {
+  description = "Whether the DB instance is publicly accessible. Defaults to false."
+  type        = bool
+  default     = false
 }

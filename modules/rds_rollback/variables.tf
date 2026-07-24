@@ -135,6 +135,12 @@ variable "backup_retention_period" {
   default     = 0
 }
 
+variable "publicly_accessible" {
+  description = "Whether the rollback DB instance is publicly accessible. Defaults to false."
+  type        = bool
+  default     = false
+}
+
 variable "vpc_security_group_ids" {
   description = "List of VPC security groups to associate"
   type        = list(string)

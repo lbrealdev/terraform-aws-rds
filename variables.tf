@@ -73,6 +73,12 @@ variable "db_backup_retention_period" {
   }
 }
 
+variable "db_publicly_accessible" {
+  description = "Whether the RDS instance is publicly accessible. Defaults to false."
+  type        = bool
+  default     = false
+}
+
 # RDS Instance - Engine
 variable "rds_settings_active_key" {
   description = "Stable key in local.rds_settings for the running instance (e.g. v15, v16, v10, v11)"
@@ -88,15 +94,15 @@ variable "db_engine_version" {
 
 # RDS Instance - Maintenance
 variable "db_apply_immediately" {
-  description = "Specifies whether any database modifications are applied immediately"
+  description = "Specifies whether any database modifications are applied immediately. Default false defers changes to the maintenance window."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "db_allow_major_version_upgrade" {
-  description = "Indicates that major version upgrades are allowed"
+  description = "Indicates that major version upgrades are allowed. Default false requires an explicit opt-in for major upgrades."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "db_auto_minor_version_upgrade" {
@@ -169,9 +175,9 @@ variable "db_instance_max_allocated_storage" {
 }
 
 variable "db_instance_storage_encrypted" {
-  description = "Specifies whether the DB instance is encrypted. The default is false if not specified."
+  description = "Specifies whether the DB instance is encrypted. Defaults to true. When true and kms_key_id is null, AWS uses the account default aws/rds key."
   type        = bool
-  default     = null
+  default     = true
 }
 
 variable "db_instance_kms_key_id" {

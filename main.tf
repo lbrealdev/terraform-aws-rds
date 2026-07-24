@@ -44,6 +44,7 @@ module "rds_instance" {
   instance_class          = var.db_instance_class
   multi_az                = var.db_multi_az
   backup_retention_period = var.db_backup_retention_period
+  publicly_accessible     = var.db_publicly_accessible
 
   # --- Engine ---
   engine         = module.rds_settings[local.rds_settings_active_key].engine_name
@@ -109,6 +110,7 @@ module "rds_rollback" {
   apply_immediately         = var.rollback_apply_immediately
   multi_az                  = var.db_multi_az
   backup_retention_period   = var.db_backup_retention_period
+  publicly_accessible       = var.db_publicly_accessible
 
   tags = {
     Purpose = "rollback"

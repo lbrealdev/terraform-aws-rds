@@ -103,9 +103,13 @@ Key variables available in the root stack:
 | **Database** | `db_instance_class` | Instance class (e.g. `db.t3.medium`) |
 | **Database** | `db_multi_az` | Enable Multi-AZ deployment (default `false`) |
 | **Database** | `db_backup_retention_period` | Automated backup retention days 0–35 (default `0`; must be ≥ 1 with Multi-AZ) |
+| **Database** | `db_publicly_accessible` | Public endpoint access (default `false`) |
+| **Database** | `db_apply_immediately` | Apply changes immediately (default `false`; deferred to maintenance window) |
+| **Database** | `db_allow_major_version_upgrade` | Allow major version upgrades (default `false`) |
 | **Database** | `db_skip_final_snapshot` | Skip final snapshot before deletion (default `false`) |
 | **Database** | `db_final_snapshot_identifier` | Final snapshot name (required when skip is `false`) |
 | **Database** | `db_allocated_storage` | Allocated storage in gigabytes |
+| **Storage** | `db_instance_storage_encrypted` | Encrypt storage (default `true`; uses `aws/rds` when KMS key unset) |
 | **Storage** | `db_instance_storage_type` | Storage type: gp2 (default), gp3, io1, io2, standard |
 | **Storage** | `db_instance_storage_throughput` | Throughput for gp3 (125-1000 MB/s) |
 | **Storage** | `db_instance_iops` | Provisioned IOPS for io1/io2 (1000-64000) |
