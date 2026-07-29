@@ -167,10 +167,10 @@ not emit MIGRATE / STAY decisions.
 
 ## Worked Examples
 
-### A — io2 → gp3
+### A — PostgreSQL io2 → gp3 (striped baseline)
 
 **Current:** PostgreSQL, io2, 20,000 IOPS, 500 GiB, Multi-AZ, us-east-1.  
-**Observed:** p99 TotalIOPS = 7,200; throughput under 500 MiB/s.
+**Observed Maximum:** peak Read+Write IOPS ≈ 7,200; peak throughput under 500 MiB/s.
 
 ```
 need_iops = 7200 × 1.2 = 8640  ≤ striped baseline 12K/500
@@ -179,7 +179,7 @@ need_iops = 7200 × 1.2 = 8640  ≤ striped baseline 12K/500
 → storage_throughput = null   # included baseline: 500 MiB/s
 ```
 
-Cost (Multi-AZ ×2, **us-east-1 reference rates**): io2 ≈ $4,125/mo → gp3 baseline ≈ $115/mo (informational).
+Cost (Multi-AZ ×2, Price List or fallback rates): io2 ≈ $4,125/mo → gp3 baseline ≈ $115/mo (informational).
 
 ### B — SQL Server io2 → gp3 (Maximum-based)
 
@@ -221,8 +221,9 @@ Re-check ≥ **7 days**:
 | Check | Expectation |
 |-------|-------------|
 | `DiskQueueDepth` | Not rising vs pre-change under similar load |
-| Latency p99 | Within app SLA |
-| p99 TotalIOPS | Under destination provisioned / baseline ceiling |
+| Latency (Average / p99 of averages) | Within app SLA |
+| Peak IOPS (Maximum Read+Write) | Under destination provisioned / class max |
+| Peak throughput | Under destination MiB/s / class max |
 | `BurstBalance` | **Not** a gp3 health signal after leaving PIOPS |
 
 ## FAQ
