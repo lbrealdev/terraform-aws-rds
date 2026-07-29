@@ -8,8 +8,8 @@ Cost impact is informational.
 
 | Current | Default target | Terraform knobs to set |
 |---------|----------------|------------------------|
-| `io1` / `io2` | `gp3` | `db_instance_storage_type`, `db_instance_iops`, `db_instance_storage_throughput` |
-| `gp3` | `io2` | `db_instance_storage_type`, `db_instance_iops` (`throughput` = `null`) |
+| `io1` / `io2` | `gp3` | `storage_type`, `iops`, `storage_throughput` |
+| `gp3` | `io2` | `storage_type`, `iops` (`storage_throughput` = `null`) |
 
 **Goal:** use CloudWatch **demand** (not the provisioned ceiling alone) to
 recommend destination settings, then compare estimated monthly cost.
@@ -87,9 +87,24 @@ Derive:
 
 | Setting | gp3 | io2 |
 |---------|-----|-----|
-| `db_instance_storage_type` | `"gp3"` | `"io2"` |
-| `db_instance_iops` | Optional (baseline or tuned) | Required (provisioned) |
-| `db_instance_storage_throughput` | Optional (baseline or tuned) | `null` |
+| `storage_type` | `"gp3"` | `"io2"` |
+| `iops` | Optional (baseline or tuned) | Required (provisioned) |
+| `storage_throughput` | Optional (baseline or tuned) | `null` |
+
+Map these generic names to your module variables as needed (this repo uses
+`db_instance_*` prefixes at the root stack).
+
+### What `null` means (gp3 baseline)
+
+For gp3, **`iops = null` and `storage_throughput = null` mean “use the included
+baseline”** — do not provision extras. That is correct when demand (with headroom)
+fits under the applicable baseline:
+
+- Below stripe (or SQL Server): **3,000 IOPS / 125 MiB/s**
+- At/above stripe (MySQL/MariaDB/PostgreSQL/Db2/Oracle): **12,000 IOPS / 500 MiB/s**
+
+The script’s **Summary** section always prints the applicable baseline and whether
+null means baseline. **Notes** are warnings only and are omitted when empty.
 
 ### gp3 performance by engine / size
 
@@ -113,7 +128,8 @@ stripe and demand &gt; baseline → note: grow storage or keep PIOPS. Enforce
 
 ## Step 5 — Compare Costs (informational)
 
-Rates are region-parameterized (defaults = us-east-1 reference).
+Rates are region-parameterized. Script defaults are **us-east-1 reference
+constants** (informational — not the live AWS Price List API).
 
 | Type | Storage $/GB-mo | IOPS | Throughput |
 |------|-----------------|------|------------|
@@ -150,12 +166,12 @@ not emit MIGRATE / STAY decisions.
 
 ```
 need_iops = 7200 × 1.2 = 8640  ≤ striped baseline 12K/500
-→ db_instance_storage_type = "gp3"
-→ db_instance_iops = null
-→ db_instance_storage_throughput = null
+→ storage_type = "gp3"
+→ iops = null                 # included baseline: 12000 IOPS
+→ storage_throughput = null   # included baseline: 500 MiB/s
 ```
 
-Cost (Multi-AZ ×2): io2 ≈ $4,125/mo → gp3 baseline ≈ $115/mo (informational).
+Cost (Multi-AZ ×2, **us-east-1 reference rates**): io2 ≈ $4,125/mo → gp3 baseline ≈ $115/mo (informational).
 
 ### B — gp3 → io2
 
@@ -164,26 +180,26 @@ Cost (Multi-AZ ×2): io2 ≈ $4,125/mo → gp3 baseline ≈ $115/mo (information
 
 ```
 need_iops = 7200 × 1.2 = 8640 → round to 8700
-→ db_instance_storage_type = "io2"
-→ db_instance_iops = 8700
-→ db_instance_storage_throughput = null
+→ storage_type = "io2"
+→ iops = 8700
+→ storage_throughput = null
 ```
 
-Cost rises vs gp3 baseline (informational); use when you need PIOPS/DLV or
-explicit provisioned IOPS.
+Cost rises vs gp3 baseline (informational us-east-1 reference rates); use when you
+need PIOPS/DLV or explicit provisioned IOPS.
 
-## Applying in Terraform
+## Applying settings
 
 ```hcl
-# Example: PIOPS → gp3 baseline
-db_instance_storage_type       = "gp3"
-db_instance_iops               = null
-db_instance_storage_throughput = null
+# Example: PIOPS → gp3 baseline (null = included performance)
+storage_type       = "gp3"
+iops               = null  # included baseline: 12000 IOPS (striped example)
+storage_throughput = null  # included baseline: 500 MiB/s
 
 # Example: gp3 → io2
-db_instance_storage_type       = "io2"
-db_instance_iops               = 8700
-db_instance_storage_throughput = null
+storage_type       = "io2"
+iops               = 8700
+storage_throughput = null
 ```
 
 Apply with `just plan` / `just apply`. Storage type changes typically use the

@@ -36,9 +36,14 @@ RATE_PIOPS = 0.10
 IO2_MIN_IOPS = 1000
 IO2_MAX_IOPS = 256000
 
+COST_RATES_NOTE = (
+    "Cost uses us-east-1 reference rate constants in this script "
+    "(informational; not live AWS Price List API)."
+)
+
 
 def log(msg: str) -> None:
-    print(f"[{SCRIPT_NAME}] {msg}", file=sys.stderr)
+    print(f"→ {msg}", file=sys.stderr)
 
 
 def die(msg: str, code: int) -> None:
@@ -372,9 +377,61 @@ def fmt_num(v: float | None, places: int = 0) -> str:
     return f"{v:.{places}f}"
 
 
+def build_summary(ctx: dict[str, Any]) -> list[str]:
+    """Always-on explanation of the recommendation (not warnings)."""
+    lines: list[str] = []
+    target = ctx["target"]
+    need_iops = ctx["need_iops"]
+    need_tp = ctx["need_tp"]
+    base_iops = ctx["baseline_iops"]
+    base_tp = ctx["baseline_tp"]
+    uses_baseline = ctx["uses_baseline"]
+
+    if target == "gp3":
+        lines.append(
+            f"Demand with headroom: need_iops≈{fmt_num(need_iops)}, "
+            f"need_tp≈{fmt_num(need_tp, 1)} MiB/s."
+        )
+        lines.append(
+            f"Applicable included gp3 baseline for this engine/size: "
+            f"{base_iops} IOPS / {base_tp} MiB/s."
+        )
+        if ctx["dlv_blocker"]:
+            lines.append("No gp3 recommendation: Dedicated Log Volume blocks gp3.")
+        elif ctx["needs_growth"] and uses_baseline and ctx["rec_iops"] is None:
+            lines.append(
+                f"Demand exceeds baseline-only volume (< stripe {ctx['stripe_threshold']} GiB); "
+                "grow storage or keep current type before tuning gp3."
+            )
+        elif uses_baseline:
+            lines.append(
+                f"iops/storage_throughput = null means use the included baseline "
+                f"({base_iops} IOPS / {base_tp} MiB/s) — demand fits under baseline."
+            )
+        else:
+            lines.append(
+                f"Provisioned above baseline: iops={ctx['rec_iops']}, "
+                f"storage_throughput={ctx['rec_tp']} "
+                f"(extras billed above {base_iops} IOPS / {base_tp} MiB/s)."
+            )
+    else:
+        lines.append(
+            f"Demand with headroom: need_iops≈{fmt_num(need_iops)} → "
+            f"recommended io2 iops={ctx['rec_iops']} "
+            f"(storage_throughput = null for io2)."
+        )
+
+    lines.append(COST_RATES_NOTE)
+    return lines
+
+
 def emit_table(ctx: dict[str, Any]) -> None:
-    notes = ctx["notes"] or ["(none)"]
-    note_lines = "\n".join(f"  - {n}" for n in notes)
+    summary_lines = "\n".join(f"  - {s}" for s in ctx["summary"])
+    notes = ctx["notes"]
+    notes_block = ""
+    if notes:
+        note_lines = "\n".join(f"  - {n}" for n in notes)
+        notes_block = f"\nNotes:\n{note_lines}\n"
     tf = ctx["tf_block"]
     print(
         f"""=== RDS Storage Type Sizing ===
@@ -397,22 +454,26 @@ Observed Metrics ({ctx['days']}-day lookback, period {ctx['period']}s):
   Avg CPUUtilization: {fmt_num(ctx['cpu_avg'], 1)}% (max {fmt_num(ctx['cpu_max'], 1)}%)
   Demand (headroom {ctx['headroom']}): need_iops={fmt_num(ctx['need_iops'])} need_tp={fmt_num(ctx['need_tp'], 1)} MiB/s
 
-Recommended Terraform ({ctx['target']}):
+Summary:
+{summary_lines}
+
+Recommended settings ({ctx['target']}):
 {tf}
 
 Estimated recommended monthly cost: ${ctx['rec_cost']:.2f}
 Cost delta (current − recommended): {ctx['cost_delta_pct']:.2f}% (${ctx['cost_delta']:.2f}/mo)
-  (positive = recommended is cheaper)
-
-Notes:
-{note_lines}
-"""
+  (positive = recommended is cheaper; {COST_RATES_NOTE})
+{notes_block}"""
     )
 
 
 def emit_markdown(ctx: dict[str, Any]) -> None:
-    notes = ctx["notes"] or ["(none)"]
-    note_lines = "\n".join(f"- {n}" for n in notes)
+    summary_lines = "\n".join(f"- {s}" for s in ctx["summary"])
+    notes = ctx["notes"]
+    notes_block = ""
+    if notes:
+        note_lines = "\n".join(f"- {n}" for n in notes)
+        notes_block = f"\n## Notes\n\n{note_lines}\n"
     print(
         f"""# RDS Storage Type Sizing
 
@@ -424,18 +485,20 @@ def emit_markdown(ctx: dict[str, Any]) -> None:
 | Direction | `{ctx['storage_type']}` → `{ctx['target']}` |
 | Current cost | ${ctx['current_cost']:.2f}/mo |
 | p99 TotalIOPS | {fmt_num(ctx['tiops_p99'])} |
-| Recommended IOPS | {ctx['rec_iops'] if ctx['rec_iops'] is not None else 'null'} |
-| Recommended throughput | {ctx['rec_tp'] if ctx['rec_tp'] is not None else 'null'} |
+| Recommended IOPS | {ctx['rec_iops'] if ctx['rec_iops'] is not None else 'null (baseline)'} |
+| Recommended throughput | {ctx['rec_tp'] if ctx['rec_tp'] is not None else 'null (baseline)'} |
+| Baseline | {ctx['baseline_iops']} IOPS / {ctx['baseline_tp']} MiB/s |
 | Recommended cost | ${ctx['rec_cost']:.2f}/mo |
 | Cost delta | {ctx['cost_delta_pct']:.2f}% (${ctx['cost_delta']:.2f}/mo) |
+
+## Summary
+
+{summary_lines}
 
 ```hcl
 {ctx['tf_hcl']}
 ```
-
-Notes:
-{note_lines}
-"""
+{notes_block}"""
     )
 
 
@@ -473,16 +536,21 @@ def emit_json(ctx: dict[str, Any]) -> None:
             "need_iops": ctx["need_iops"],
             "need_throughput_mib_s": ctx["need_tp"],
             "recommendation_ok": ctx["recommendation_ok"],
-            "db_instance_storage_type": ctx["target"],
-            "db_instance_iops": ctx["rec_iops"],
-            "db_instance_storage_throughput": ctx["rec_tp"],
+            "storage_type": ctx["target"],
+            "iops": ctx["rec_iops"],
+            "storage_throughput": ctx["rec_tp"],
+            "baseline_iops": ctx["baseline_iops"],
+            "baseline_throughput_mib_s": ctx["baseline_tp"],
+            "uses_baseline": ctx["uses_baseline"],
         },
         "cost": {
             "current_monthly": ctx["current_cost"],
             "recommended_monthly": ctx["rec_cost"],
             "delta_monthly": ctx["cost_delta"],
             "delta_pct": ctx["cost_delta_pct"],
+            "rates_note": COST_RATES_NOTE,
         },
+        "summary": ctx["summary"],
         "notes": ctx["notes"],
     }
     print(json.dumps(payload, indent=2))
@@ -656,13 +724,24 @@ def main(argv: list[str] | None = None) -> int:
         if dq["avg"] > thresh:
             notes.append("DiskQueueDepth suggests I/O pressure — do not undersize the destination")
 
-    # Terraform snippet
+    # Terraform / settings snippet (generic knob names)
+    uses_baseline = target == "gp3" and sizing.rec_iops is None and not sizing.dlv_blocker
+    baseline_iops = sizing.bill_base_iops
+    baseline_tp = sizing.bill_base_tp
+
     if sizing.dlv_blocker:
         tf_block = "  # No gp3 recommendation while Dedicated Log Volume is enabled"
         tf_hcl = "# No gp3 recommendation while Dedicated Log Volume is enabled"
     else:
-        iops_line = "null" if sizing.rec_iops is None else str(sizing.rec_iops)
-        tp_line = "null" if sizing.rec_tp is None else str(sizing.rec_tp)
+        if sizing.rec_iops is None and target == "gp3":
+            iops_line = f"null  # included baseline: {baseline_iops} IOPS"
+            tp_line = f"null  # included baseline: {baseline_tp} MiB/s"
+        elif target == "io2":
+            iops_line = str(sizing.rec_iops)
+            tp_line = "null  # not used for io2"
+        else:
+            iops_line = str(sizing.rec_iops)
+            tp_line = str(sizing.rec_tp)
         comment = ""
         if sizing.needs_growth and target == "gp3" and sizing.rec_iops is None:
             comment = (
@@ -671,14 +750,14 @@ def main(argv: list[str] | None = None) -> int:
             )
         tf_block = (
             f"{comment}"
-            f'  db_instance_storage_type       = "{target}"\n'
-            f"  db_instance_iops               = {iops_line}\n"
-            f"  db_instance_storage_throughput = {tp_line}"
+            f'  storage_type       = "{target}"\n'
+            f"  iops               = {iops_line}\n"
+            f"  storage_throughput = {tp_line}"
         )
         tf_hcl = (
-            f'db_instance_storage_type       = "{target}"\n'
-            f"db_instance_iops               = {iops_line}\n"
-            f"db_instance_storage_throughput = {tp_line}"
+            f'storage_type       = "{target}"\n'
+            f"iops               = {iops_line}\n"
+            f"storage_throughput = {tp_line}"
         )
 
     if storage_type == "gp3":
@@ -703,6 +782,9 @@ def main(argv: list[str] | None = None) -> int:
         "instance_class": instance_class,
         "status": status,
         "dlv": dlv,
+        "dlv_blocker": sizing.dlv_blocker,
+        "needs_growth": sizing.needs_growth,
+        "stripe_threshold": sizing.stripe_threshold,
         "days": args.days,
         "period": period,
         "headroom": args.headroom,
@@ -720,6 +802,9 @@ def main(argv: list[str] | None = None) -> int:
         "empty_metrics": empty_metrics,
         "rec_iops": sizing.rec_iops,
         "rec_tp": sizing.rec_tp,
+        "baseline_iops": baseline_iops,
+        "baseline_tp": baseline_tp,
+        "uses_baseline": uses_baseline,
         "recommendation_ok": sizing.recommendation_ok,
         "current_cost": current_cost,
         "rec_cost": rec_cost,
@@ -729,8 +814,10 @@ def main(argv: list[str] | None = None) -> int:
         "tf_block": tf_block,
         "tf_hcl": tf_hcl,
     }
+    ctx["summary"] = build_summary(ctx)
 
     log("Done.")
+    print("", file=sys.stderr)
     if args.format == "table":
         emit_table(ctx)
     elif args.format == "markdown":
