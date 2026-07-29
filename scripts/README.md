@@ -35,7 +35,9 @@ for SQL Server), the script recommends concrete values (e.g. `6000` / `500`).
 ### Cost
 
 Best-effort **AWS Price List Query API** rates for the instance region (IAM:
-`pricing:GetProducts`). Falls back to us-east-1 reference constants if unavailable.
+`pricing:GetProducts`; boto3
+[`get_products`](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/pricing/client/get_products.html)).
+Falls back to us-east-1 reference constants if unavailable.
 
 Full methodology:
 [docs/storage-performance-measurement.md](../docs/storage-performance-measurement.md)
