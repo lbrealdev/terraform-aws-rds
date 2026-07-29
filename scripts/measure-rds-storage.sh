@@ -144,6 +144,10 @@ is_sqlserver() {
   [[ "$1" == sqlserver-* ]]
 }
 
+is_oracle() {
+  [[ "$1" == "oracle-ee" || "$1" == "oracle-se2" || "$1" == "oracle-ee-cdb" || "$1" == "oracle-se2-cdb" ]]
+}
+
 clamp() {
   # clamp value lo hi
   awk -v v="$1" -v lo="$2" -v hi="$3" 'BEGIN {
@@ -430,13 +434,22 @@ if [[ "$PEAK_TP_MIB" == "null" ]]; then
 fi
 
 # --- Step 4: gp3 sizing ---
+# AWS gp3 baselines/limits (CHAP_Storage):
+#   SQL Server: baseline 3K/125, max 80K/2K, no stripe threshold
+#   Oracle: stripe at 200 GiB; below = 3K/125 only; above = baseline 12K/500, max 64K/4K
+#   MySQL/MariaDB/PostgreSQL/Db2: stripe at 400 GiB; same pattern as Oracle above stripe
 STRIPE_THRESHOLD=400
+if is_oracle "$ENGINE"; then
+  STRIPE_THRESHOLD=200
+fi
+
 GP3_BASE_IOPS=3000
 GP3_BASE_TP=125
-GP3_MAX_IOPS=16000
-GP3_MAX_TP=1000
+GP3_MAX_IOPS=64000
+GP3_MAX_TP=4000
 if is_sqlserver "$ENGINE"; then
-  GP3_MAX_IOPS=64000
+  GP3_MAX_IOPS=80000
+  GP3_MAX_TP=2000
 fi
 
 # Treat null metrics as 0 for sizing (with empty-metrics warning already emitted)
@@ -460,21 +473,48 @@ GP3_IOPS_TF="null"
 GP3_TP_TF="null"
 FLAG_NEEDS_GROWTH=0
 FLAG_OVER_MAX=0
+# Billing baseline for extras (overridden for striped volumes)
+BILL_BASE_IOPS=3000
+BILL_BASE_TP=125
 
-if is_sqlserver "$ENGINE"; then
+apply_tuned_gp3() {
+  # Uses NEED_*, GP3_BASE_*, GP3_MAX_*; sets GP3_IOPS/TP/TF and FLAG_OVER_MAX
+  if awk -v i="$NEED_IOPS" -v tp="$NEED_TP" -v bi="$GP3_BASE_IOPS" -v bt="$GP3_BASE_TP" \
+    'BEGIN { exit !((i <= bi) && (tp <= bt)) }'; then
+    GP3_IOPS=""
+    GP3_TP=""
+    GP3_IOPS_TF="null"
+    GP3_TP_TF="null"
+    return
+  fi
   GP3_IOPS="$(clamp "$NEED_IOPS" "$GP3_BASE_IOPS" "$GP3_MAX_IOPS")"
   GP3_TP="$(clamp "$NEED_TP" "$GP3_BASE_TP" "$GP3_MAX_TP")"
-  # Enforce throughput ≤ 0.25 × iops
   MIN_IOPS_FOR_TP="$(awk -v tp="$GP3_TP" 'BEGIN { printf "%.6f", tp * 4 }')"
   GP3_IOPS="$(awk -v a="$GP3_IOPS" -v b="$MIN_IOPS_FOR_TP" 'BEGIN { print (a > b ? a : b) }')"
   GP3_IOPS="$(clamp "$GP3_IOPS" "$GP3_BASE_IOPS" "$GP3_MAX_IOPS")"
   GP3_IOPS="$(round_iops "$GP3_IOPS")"
+  # After rounding, keep within max and re-clamp TP relationship floor
+  if awk -v i="$GP3_IOPS" -v m="$GP3_MAX_IOPS" 'BEGIN { exit !(i > m) }'; then
+    GP3_IOPS="$GP3_MAX_IOPS"
+  fi
   GP3_TP="$(ceil_int "$GP3_TP")"
   if awk -v n="$NEED_IOPS" -v m="$GP3_MAX_IOPS" 'BEGIN { exit !(n > m) }'; then
     FLAG_OVER_MAX=1
   fi
+  GP3_IOPS_TF="$GP3_IOPS"
+  GP3_TP_TF="$GP3_TP"
+}
+
+if is_sqlserver "$ENGINE"; then
+  BILL_BASE_IOPS=3000
+  BILL_BASE_TP=125
+  apply_tuned_gp3
 elif awk -v s="$ALLOCATED" -v t="$STRIPE_THRESHOLD" 'BEGIN { exit !(s < t) }'; then
-  # Below stripe threshold: baseline only
+  # Below stripe threshold: baseline only (3K / 125)
+  BILL_BASE_IOPS=3000
+  BILL_BASE_TP=125
+  GP3_BASE_IOPS=3000
+  GP3_BASE_TP=125
   if awk -v i="$NEED_IOPS" -v tp="$NEED_TP" 'BEGIN { exit !((i <= 3000) && (tp <= 125)) }'; then
     GP3_IOPS=""
     GP3_TP=""
@@ -488,41 +528,30 @@ elif awk -v s="$ALLOCATED" -v t="$STRIPE_THRESHOLD" 'BEGIN { exit !(s < t) }'; t
     GP3_TP_TF="null"
   fi
 else
-  GP3_IOPS="$(clamp "$NEED_IOPS" "$GP3_BASE_IOPS" "$GP3_MAX_IOPS")"
-  GP3_TP="$(clamp "$NEED_TP" "$GP3_BASE_TP" "$GP3_MAX_TP")"
-  MIN_IOPS_FOR_TP="$(awk -v tp="$GP3_TP" 'BEGIN { printf "%.6f", tp * 4 }')"
-  GP3_IOPS="$(awk -v a="$GP3_IOPS" -v b="$MIN_IOPS_FOR_TP" 'BEGIN { print (a > b ? a : b) }')"
-  GP3_IOPS="$(clamp "$GP3_IOPS" "$GP3_BASE_IOPS" "$GP3_MAX_IOPS")"
+  # Striped: included baseline 12K / 500; provisionable 12K–64K / 500–4K
+  BILL_BASE_IOPS=12000
+  BILL_BASE_TP=500
+  GP3_BASE_IOPS=12000
+  GP3_BASE_TP=500
+  GP3_MAX_IOPS=64000
+  GP3_MAX_TP=4000
+  apply_tuned_gp3
   # iops ≤ 500 × storage_gb
-  MAX_BY_SIZE="$(awk -v s="$ALLOCATED" 'BEGIN { print 500 * s }')"
-  if awk -v i="$GP3_IOPS" -v m="$MAX_BY_SIZE" 'BEGIN { exit !(i > m) }'; then
-    FLAG_NEEDS_GROWTH=1
-  fi
-  GP3_IOPS="$(round_iops "$GP3_IOPS")"
-  GP3_TP="$(ceil_int "$GP3_TP")"
-  if awk -v n="$NEED_IOPS" -v m="$GP3_MAX_IOPS" 'BEGIN { exit !(n > m) }'; then
-    FLAG_OVER_MAX=1
+  if [[ -n "$GP3_IOPS" ]]; then
+    MAX_BY_SIZE="$(awk -v s="$ALLOCATED" 'BEGIN { print 500 * s }')"
+    if awk -v i="$GP3_IOPS" -v m="$MAX_BY_SIZE" 'BEGIN { exit !(i > m) }'; then
+      FLAG_NEEDS_GROWTH=1
+    fi
   fi
 fi
 
-# Terraform snippet values: use null for pure baseline when recommended IOPS/TP are baseline
-if [[ -n "$GP3_IOPS" ]]; then
-  if awk -v i="$GP3_IOPS" 'BEGIN { exit !(i <= 3000) }' && awk -v t="$GP3_TP" 'BEGIN { exit !(t <= 125) }'; then
-    GP3_IOPS_TF="null"
-    GP3_TP_TF="null"
-  else
-    GP3_IOPS_TF="$GP3_IOPS"
-    GP3_TP_TF="$GP3_TP"
-  fi
-fi
-
-# Cost uses billed IOPS/TP (baseline counts as 3000/125 even when TF null)
-BILL_IOPS="${GP3_IOPS:-$GP3_BASE_IOPS}"
-BILL_TP="${GP3_TP:-$GP3_BASE_TP}"
+# Cost uses billed IOPS/TP (baseline counts even when TF null)
+BILL_IOPS="${GP3_IOPS:-$BILL_BASE_IOPS}"
+BILL_TP="${GP3_TP:-$BILL_BASE_TP}"
 if [[ "$FLAG_NEEDS_GROWTH" -eq 1 && -z "$GP3_IOPS" ]]; then
-  # No valid gp3 config — cost compare against baseline for informational only
-  BILL_IOPS="$GP3_BASE_IOPS"
-  BILL_TP="$GP3_BASE_TP"
+  # No valid gp3 config — cost compare against applicable baseline for informational only
+  BILL_IOPS="$BILL_BASE_IOPS"
+  BILL_TP="$BILL_BASE_TP"
 fi
 
 MULTI_FACTOR=1
@@ -536,10 +565,11 @@ CURRENT_COST="$(awk -v gb="$ALLOCATED" -v rgb="$RATE_PIOPS_GB" -v iops="$PROV_IO
 GP3_COST="$(awk -v gb="$ALLOCATED" -v rgb="$RATE_GP3_GB" \
   -v iops="$BILL_IOPS" -v riops="$RATE_GP3_IOPS" \
   -v tp="$BILL_TP" -v rtp="$RATE_GP3_TP" \
+  -v bi="$BILL_BASE_IOPS" -v bt="$BILL_BASE_TP" \
   -v m="$MULTI_FACTOR" \
   'BEGIN {
-    iops_extra = (iops > 3000) ? (iops - 3000) : 0
-    tp_extra = (tp > 125) ? (tp - 125) : 0
+    iops_extra = (iops > bi) ? (iops - bi) : 0
+    tp_extra = (tp > bt) ? (tp - bt) : 0
     printf "%.6f", (gb * rgb + iops_extra * riops + tp_extra * rtp) * m
   }')"
 
@@ -549,7 +579,7 @@ SAVINGS_PCT="$(awk -v c="$CURRENT_COST" -v g="$GP3_COST" 'BEGIN {
   printf "%.2f", (c - g) / c * 100
 }')"
 
-# Latency signal
+# Latency signal (warning only — does not auto-STAY; confirm hard SLA with app owner)
 TIGHT_LATENCY=0
 if [[ "$RLAT_P99_MS" != "null" && "$WLAT_P99_MS" != "null" ]]; then
   if awk -v r="$RLAT_P99_MS" -v w="$WLAT_P99_MS" 'BEGIN { exit !((r < 1.0) && (w < 1.0)) }'; then
@@ -579,9 +609,6 @@ elif [[ "$STATUS" == "stopped" || "$EMPTY_METRICS" -eq 1 ]]; then
 elif [[ "$FLAG_OVER_MAX" -eq 1 ]]; then
   DECISION="STAY"
   DECISION_REASON="need_iops (${NEED_IOPS}) exceeds gp3 max (${GP3_MAX_IOPS})"
-elif [[ "$TIGHT_LATENCY" -eq 1 ]]; then
-  DECISION="STAY"
-  DECISION_REASON="p99 latency < 1 ms sustained — hard sub-ms SLA may require io2"
 elif [[ "$FLAG_NEEDS_GROWTH" -eq 1 ]]; then
   DECISION="CONDITIONAL"
   DECISION_REASON="storage below stripe threshold or IOPS>size ratio; grow storage to ≥${STRIPE_THRESHOLD} GiB or stay on PIOPS"
@@ -653,6 +680,9 @@ EOF
   fi
   if [[ "$QUEUE_PRESSURE" -eq 1 ]]; then
     echo "  Note: DiskQueueDepth suggests I/O pressure relative to provisioned IOPS."
+  fi
+  if [[ "$TIGHT_LATENCY" -eq 1 ]]; then
+    echo "  Note: p99 latency < 1 ms — confirm with the app owner whether a hard sub-ms SLA requires staying on io2."
   fi
 
   echo
