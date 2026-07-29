@@ -7,7 +7,9 @@
 # ///
 """Size equivalent RDS storage Terraform settings from CloudWatch demand.
 
-Directions: io1/io2 → gp3, or gp3 → io2. Cost delta is informational.
+Directions: io1/io2 → gp3, or gp3 → io2.
+Default sizing uses Maximum Read/Write IOPS and throughput (console/Q/Rovo-aligned),
+with instance-class EBS caps and regional Price List rates when available.
 """
 
 from __future__ import annotations
@@ -26,20 +28,38 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 SCRIPT_NAME = "measure-rds-storage.py"
 
-# us-east-1 reference rates (informational cost only)
-RATE_GP3_GB = 0.115
-RATE_GP3_IOPS = 0.02
-RATE_GP3_TP = 0.08
-RATE_PIOPS_GB = 0.125
-RATE_PIOPS = 0.10
+# Fallback us-east-1 reference rates if Price List API fails
+FALLBACK_RATE_GP3_GB = 0.115
+FALLBACK_RATE_GP3_IOPS = 0.02
+FALLBACK_RATE_GP3_TP = 0.08
+FALLBACK_RATE_PIOPS_GB = 0.125
+FALLBACK_RATE_PIOPS = 0.10
 
 IO2_MIN_IOPS = 1000
 IO2_MAX_IOPS = 256000
 
-COST_RATES_NOTE = (
-    "Cost uses us-east-1 reference rate constants in this script "
-    "(informational; not live AWS Price List API)."
-)
+# EBS-optimized limits for common RDS classes (max / baseline IOPS and MiB/s).
+# Source: EC2 EBS-optimized instance specs (RDS db.* maps to same family).
+INSTANCE_CLASS_EBS: dict[str, dict[str, float]] = {
+    "db.m5.large": {"max_iops": 18750, "baseline_iops": 3000, "max_tp_mib": 593.75, "baseline_tp_mib": 71.88},
+    "db.m5.xlarge": {"max_iops": 18750, "baseline_iops": 6000, "max_tp_mib": 593.75, "baseline_tp_mib": 143.75},
+    "db.m5.2xlarge": {"max_iops": 18750, "baseline_iops": 12000, "max_tp_mib": 593.75, "baseline_tp_mib": 287.5},
+    "db.m5.4xlarge": {"max_iops": 18750, "baseline_iops": 18750, "max_tp_mib": 593.75, "baseline_tp_mib": 593.75},
+    "db.m5.8xlarge": {"max_iops": 30000, "baseline_iops": 30000, "max_tp_mib": 850.0, "baseline_tp_mib": 850.0},
+    "db.m5.12xlarge": {"max_iops": 40000, "baseline_iops": 40000, "max_tp_mib": 1187.5, "baseline_tp_mib": 1187.5},
+    "db.m6i.large": {"max_iops": 20000, "baseline_iops": 3000, "max_tp_mib": 625.0, "baseline_tp_mib": 78.13},
+    "db.m6i.xlarge": {"max_iops": 20000, "baseline_iops": 6000, "max_tp_mib": 625.0, "baseline_tp_mib": 156.25},
+    "db.m6i.2xlarge": {"max_iops": 20000, "baseline_iops": 12000, "max_tp_mib": 625.0, "baseline_tp_mib": 312.5},
+    "db.m6i.4xlarge": {"max_iops": 20000, "baseline_iops": 20000, "max_tp_mib": 625.0, "baseline_tp_mib": 625.0},
+    "db.r5.large": {"max_iops": 18750, "baseline_iops": 3000, "max_tp_mib": 593.75, "baseline_tp_mib": 71.88},
+    "db.r5.xlarge": {"max_iops": 18750, "baseline_iops": 6000, "max_tp_mib": 593.75, "baseline_tp_mib": 143.75},
+    "db.r5.2xlarge": {"max_iops": 18750, "baseline_iops": 12000, "max_tp_mib": 593.75, "baseline_tp_mib": 287.5},
+    "db.r5.4xlarge": {"max_iops": 18750, "baseline_iops": 18750, "max_tp_mib": 593.75, "baseline_tp_mib": 593.75},
+    "db.r6i.large": {"max_iops": 20000, "baseline_iops": 3000, "max_tp_mib": 625.0, "baseline_tp_mib": 78.13},
+    "db.r6i.xlarge": {"max_iops": 20000, "baseline_iops": 6000, "max_tp_mib": 625.0, "baseline_tp_mib": 156.25},
+    "db.r6i.2xlarge": {"max_iops": 20000, "baseline_iops": 12000, "max_tp_mib": 625.0, "baseline_tp_mib": 312.5},
+    "db.r6i.4xlarge": {"max_iops": 20000, "baseline_iops": 20000, "max_tp_mib": 625.0, "baseline_tp_mib": 625.0},
+}
 
 
 def log(msg: str) -> None:
@@ -100,6 +120,20 @@ def series_stats(values: list[float]) -> dict[str, float | None]:
     }
 
 
+def lookup_instance_class(instance_class: str) -> dict[str, float] | None:
+    return INSTANCE_CLASS_EBS.get(instance_class)
+
+
+@dataclass
+class Rates:
+    gp3_gb: float = FALLBACK_RATE_GP3_GB
+    gp3_iops: float = FALLBACK_RATE_GP3_IOPS
+    gp3_tp: float = FALLBACK_RATE_GP3_TP
+    piops_gb: float = FALLBACK_RATE_PIOPS_GB
+    piops: float = FALLBACK_RATE_PIOPS
+    source: str = "fallback us-east-1 reference constants"
+
+
 @dataclass
 class SizingResult:
     target: str
@@ -125,50 +159,55 @@ def resolve_region(cli_region: str | None) -> str:
     return os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
 
 
+def _metric_stat_query(qid: str, name: str, db_id: str, period: int, stat: str) -> dict[str, Any]:
+    return {
+        "Id": qid,
+        "MetricStat": {
+            "Metric": {
+                "Namespace": "AWS/RDS",
+                "MetricName": name,
+                "Dimensions": [{"Name": "DBInstanceIdentifier", "Value": db_id}],
+            },
+            "Period": period,
+            "Stat": stat,
+        },
+        "ReturnData": True,
+    }
+
+
 def build_metric_queries(db_id: str, period: int) -> list[dict[str, Any]]:
-    names = [
-        "ReadIOPS",
-        "WriteIOPS",
+    queries: list[dict[str, Any]] = []
+    # Average + Maximum for the four metrics used by console/Q/Rovo sizing
+    for name in ("ReadIOPS", "WriteIOPS", "ReadThroughput", "WriteThroughput"):
+        base = name.lower()
+        queries.append(_metric_stat_query(f"{base}_avg", name, db_id, period, "Average"))
+        queries.append(_metric_stat_query(f"{base}_max", name, db_id, period, "Maximum"))
+
+    # Context metrics (Average only)
+    for name in (
         "ReadLatency",
         "WriteLatency",
-        "ReadThroughput",
-        "WriteThroughput",
         "DiskQueueDepth",
         "CPUUtilization",
         "FreeableMemory",
         "CPUCreditBalance",
-    ]
-    queries: list[dict[str, Any]] = []
-    for name in names:
-        qid = name.lower()
-        queries.append(
-            {
-                "Id": qid,
-                "MetricStat": {
-                    "Metric": {
-                        "Namespace": "AWS/RDS",
-                        "MetricName": name,
-                        "Dimensions": [{"Name": "DBInstanceIdentifier", "Value": db_id}],
-                    },
-                    "Period": period,
-                    "Stat": "Average",
-                },
-                "ReturnData": True,
-            }
-        )
+    ):
+        queries.append(_metric_stat_query(name.lower(), name, db_id, period, "Average"))
+
+    # Totals from Average series (for p99-of-averages display)
     queries.append(
         {
-            "Id": "total_iops",
-            "Expression": "readiops + writeiops",
-            "Label": "TotalIOPS",
+            "Id": "total_iops_avg",
+            "Expression": "readiops_avg + writeiops_avg",
+            "Label": "TotalIOPS_Avg",
             "ReturnData": True,
         }
     )
     queries.append(
         {
-            "Id": "total_tp",
-            "Expression": "readthroughput + writethroughput",
-            "Label": "TotalThroughput",
+            "Id": "total_tp_avg",
+            "Expression": "readthroughput_avg + writethroughput_avg",
+            "Label": "TotalThroughput_Avg",
             "ReturnData": True,
         }
     )
@@ -183,24 +222,122 @@ def fetch_metric_values(
     period: int,
 ) -> dict[str, list[float]]:
     queries = build_metric_queries(db_id, period)
-    by_id: dict[str, list[float]] = {q["Id"]: [] for q in queries}
-    next_token: str | None = None
-    while True:
-        kwargs: dict[str, Any] = {
-            "StartTime": start,
-            "EndTime": end,
-            "MetricDataQueries": queries,
-        }
-        if next_token:
-            kwargs["NextToken"] = next_token
-        resp = cw.get_metric_data(**kwargs)
-        for result in resp.get("MetricDataResults", []):
-            rid = result["Id"]
-            by_id.setdefault(rid, []).extend(float(v) for v in result.get("Values", []))
-        next_token = resp.get("NextToken")
-        if not next_token:
-            break
+    # GetMetricData allows max 500 queries; we are well under.
+    # Split into batches of 100 if needed for safety.
+    by_id: dict[str, list[float]] = {}
+    batch_size = 100
+    for i in range(0, len(queries), batch_size):
+        batch = queries[i : i + batch_size]
+        next_token: str | None = None
+        while True:
+            kwargs: dict[str, Any] = {
+                "StartTime": start,
+                "EndTime": end,
+                "MetricDataQueries": batch,
+            }
+            if next_token:
+                kwargs["NextToken"] = next_token
+            resp = cw.get_metric_data(**kwargs)
+            for result in resp.get("MetricDataResults", []):
+                rid = result["Id"]
+                by_id.setdefault(rid, []).extend(float(v) for v in result.get("Values", []))
+            next_token = resp.get("NextToken")
+            if not next_token:
+                break
     return by_id
+
+
+def fetch_regional_rates(session: Any, region: str) -> Rates:
+    """Best-effort Price List rates for AmazonRDS in the instance region."""
+    rates = Rates()
+    try:
+        # Price List Query API endpoints are regional but independent of product region.
+        pricing = session.client("pricing", region_name="us-east-1")
+
+        def first_usd_price(price_list: list[str]) -> float | None:
+            for raw in price_list:
+                try:
+                    doc = json.loads(raw)
+                    terms = doc.get("terms", {}).get("OnDemand", {})
+                    for term in terms.values():
+                        for dim in term.get("priceDimensions", {}).values():
+                            usd = dim.get("pricePerUnit", {}).get("USD")
+                            if usd is not None:
+                                return float(usd)
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    continue
+            return None
+
+        def query(filters: list[dict[str, str]]) -> float | None:
+            resp = pricing.get_products(
+                ServiceCode="AmazonRDS",
+                Filters=[{"Type": "TERM_MATCH", **f} for f in filters],
+                MaxResults=10,
+            )
+            return first_usd_price(resp.get("PriceList") or [])
+
+        loc_filter = {"Field": "location", "Value": _region_to_location(region)}
+
+        gp3_gb = query(
+            [
+                loc_filter,
+                {"Field": "volumeType", "Value": "General Purpose-GP3"},
+                {"Field": "productFamily", "Value": "Database Storage"},
+            ]
+        )
+        # Broader fallbacks commonly used in price lists
+        if gp3_gb is None:
+            gp3_gb = query(
+                [
+                    loc_filter,
+                    {"Field": "storageMedia", "Value": "SSD"},
+                    {"Field": "volumeType", "Value": "General Purpose"},
+                ]
+            )
+
+        piops_gb = query(
+            [
+                loc_filter,
+                {"Field": "volumeType", "Value": "Provisioned IOPS"},
+                {"Field": "productFamily", "Value": "Database Storage"},
+            ]
+        )
+
+        # IOPS / throughput SKUs vary by attribute naming; keep fallbacks if missing
+        if gp3_gb is not None:
+            rates.gp3_gb = gp3_gb
+        if piops_gb is not None:
+            rates.piops_gb = piops_gb
+
+        if gp3_gb is not None or piops_gb is not None:
+            rates.source = f"AWS Price List API (partial) for {region}; IOPS/TP may use fallbacks"
+            log(f"Pricing: loaded storage GB rates from Price List for {region}")
+        else:
+            log("Pricing: Price List returned no matching products; using fallback constants")
+    except (ClientError, BotoCoreError, Exception) as e:  # noqa: BLE001
+        log(f"Pricing: Price List unavailable ({e}); using fallback constants")
+        rates.source = f"fallback constants (Price List error)"
+    return rates
+
+
+def _region_to_location(region: str) -> str:
+    """Map region code to Price List 'location' attribute (common set)."""
+    mapping = {
+        "us-east-1": "US East (N. Virginia)",
+        "us-east-2": "US East (Ohio)",
+        "us-west-1": "US West (N. California)",
+        "us-west-2": "US West (Oregon)",
+        "eu-west-1": "EU (Ireland)",
+        "eu-west-2": "EU (London)",
+        "eu-central-1": "EU (Frankfurt)",
+        "eu-north-1": "EU (Stockholm)",
+        "ap-southeast-1": "Asia Pacific (Singapore)",
+        "ap-southeast-2": "Asia Pacific (Sydney)",
+        "ap-northeast-1": "Asia Pacific (Tokyo)",
+        "sa-east-1": "South America (Sao Paulo)",
+        "ca-central-1": "Canada (Central)",
+    }
+    return mapping.get(region, "US East (N. Virginia)")
 
 
 def size_to_gp3(
@@ -237,6 +374,9 @@ def size_to_gp3(
         if iops > max_iops:
             iops = max_iops
         tp = ceil_int(tp)
+        # Round throughput to a practical step (nearest 25)
+        tp = int(math.ceil(tp / 25.0) * 25)
+        tp = int(clamp(tp, base_tp, max_tp))
         if need_iops > max_iops:
             result.over_max = True
             result.recommendation_ok = False
@@ -253,12 +393,11 @@ def size_to_gp3(
         result.needs_growth = True
         result.recommendation_ok = False
         result.notes.append(
-            f"Storage below stripe threshold or IOPS>size ratio — grow to ≥{stripe} GiB "
+            f"Storage below stripe threshold — grow to ≥{stripe} GiB "
             "before tuning gp3, or stay on current type"
         )
         return result
 
-    # Striped
     base_iops, base_tp = 12000, 500
     max_iops, max_tp = 64000, 4000
     result.bill_base_iops, result.bill_base_tp = base_iops, base_tp
@@ -279,7 +418,7 @@ def size_to_gp3(
     if iops > 500 * allocated:
         result.needs_growth = True
         result.notes.append(
-            f"IOPS>size ratio — grow storage to ≥{stripe} GiB before tuning, or stay on current type"
+            f"IOPS>size ratio — grow storage or stay on current type"
         )
     result.rec_iops = int(iops)
     result.rec_tp = int(tp)
@@ -317,6 +456,52 @@ def size_to_io2(
     return result
 
 
+def apply_instance_class_caps(
+    sizing: SizingResult,
+    *,
+    instance_class: str,
+    need_iops: float,
+    need_tp: float,
+    prov_iops: int,
+) -> None:
+    limits = lookup_instance_class(instance_class)
+    if limits is None:
+        sizing.notes.append(
+            f"No EBS limit table entry for {instance_class} — could not clamp to instance class"
+        )
+        return
+
+    max_iops = int(limits["max_iops"])
+    max_tp = float(limits["max_tp_mib"])
+    base_iops = int(limits["baseline_iops"])
+    base_tp = float(limits["baseline_tp_mib"])
+
+    if need_iops > max_iops or need_tp > max_tp:
+        sizing.notes.append(
+            f"Peak demand exceeds {instance_class} EBS max "
+            f"({max_iops} IOPS / {max_tp:.0f} MiB/s) — consider a larger instance class"
+        )
+    if prov_iops > max_iops:
+        sizing.notes.append(
+            f"Current provisioned IOPS ({prov_iops}) > {instance_class} max ({max_iops}) — "
+            "realized performance was already class-capped"
+        )
+
+    if sizing.rec_iops is not None and sizing.rec_iops > max_iops:
+        sizing.rec_iops = max_iops
+        sizing.gp3_iops_bill = max_iops
+        if sizing.io2_iops is not None:
+            sizing.io2_iops = max_iops
+        sizing.notes.append(f"Clamped recommended iops to {instance_class} max {max_iops}")
+
+    if sizing.rec_tp is not None and sizing.rec_tp > max_tp:
+        sizing.rec_tp = int(math.floor(max_tp))
+        sizing.gp3_tp_bill = sizing.rec_tp
+        sizing.notes.append(
+            f"Clamped recommended storage_throughput to {instance_class} max {sizing.rec_tp} MiB/s"
+        )
+
+
 def gp3_monthly_cost(
     gb: int,
     iops: int,
@@ -324,22 +509,25 @@ def gp3_monthly_cost(
     base_iops: int,
     base_tp: int,
     multi: int,
+    rates: Rates,
 ) -> float:
     iops_extra = max(0, iops - base_iops)
     tp_extra = max(0, tp - base_tp)
-    return (gb * RATE_GP3_GB + iops_extra * RATE_GP3_IOPS + tp_extra * RATE_GP3_TP) * multi
+    return (
+        gb * rates.gp3_gb + iops_extra * rates.gp3_iops + tp_extra * rates.gp3_tp
+    ) * multi
 
 
-def piops_monthly_cost(gb: int, iops: int, multi: int) -> float:
-    return (gb * RATE_PIOPS_GB + iops * RATE_PIOPS) * multi
+def piops_monthly_cost(gb: int, iops: int, multi: int, rates: Rates) -> float:
+    return (gb * rates.piops_gb + iops * rates.piops) * multi
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog=SCRIPT_NAME,
         description=(
-            "Size equivalent RDS storage Terraform settings from CloudWatch demand "
-            "(io1/io2 → gp3, or gp3 → io2). Cost delta is informational."
+            "Size equivalent RDS storage settings from CloudWatch demand "
+            "(io1/io2 → gp3, or gp3 → io2). Default: Maximum peaks (console/Q-aligned)."
         ),
     )
     p.add_argument("-i", "--db-instance", required=True, help="RDS DB instance identifier")
@@ -360,6 +548,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="table",
         help="Output format (default: table)",
     )
+    p.add_argument(
+        "--size-from",
+        choices=("maximum", "p99-average"),
+        default="maximum",
+        help="Demand basis for sizing (default: maximum = console/Q/Rovo-aligned)",
+    )
     p.add_argument("--headroom", type=float, default=1.2, help="Demand headroom multiplier (default 1.2)")
     args = p.parse_args(argv)
     if args.days < 1:
@@ -378,7 +572,6 @@ def fmt_num(v: float | None, places: int = 0) -> str:
 
 
 def build_summary(ctx: dict[str, Any]) -> list[str]:
-    """Always-on explanation of the recommendation (not warnings)."""
     lines: list[str] = []
     target = ctx["target"]
     need_iops = ctx["need_iops"]
@@ -386,12 +579,32 @@ def build_summary(ctx: dict[str, Any]) -> list[str]:
     base_iops = ctx["baseline_iops"]
     base_tp = ctx["baseline_tp"]
     uses_baseline = ctx["uses_baseline"]
+    size_from = ctx["size_from"]
+
+    lines.append(
+        f"Sized from {'Maximum peaks (Read+Write)' if size_from == 'maximum' else 'p99 of Averages'} "
+        f"× headroom {ctx['headroom']}."
+    )
+    lines.append(
+        f"Peak observed: max ReadIOPS={fmt_num(ctx['riops_max'])}, "
+        f"max WriteIOPS={fmt_num(ctx['wiops_max'])}, "
+        f"sum≈{fmt_num(ctx['peak_iops_sum'])}; "
+        f"p99 avg TotalIOPS={fmt_num(ctx['tiops_p99'])}."
+    )
+    lines.append(
+        f"Demand with headroom: need_iops≈{fmt_num(need_iops)}, "
+        f"need_tp≈{fmt_num(need_tp, 1)} MiB/s."
+    )
+
+    cls = ctx.get("class_limits")
+    if cls:
+        lines.append(
+            f"Instance class {ctx['instance_class']}: EBS baseline "
+            f"{int(cls['baseline_iops'])} IOPS / {cls['baseline_tp_mib']:.0f} MiB/s, "
+            f"max {int(cls['max_iops'])} IOPS / {cls['max_tp_mib']:.0f} MiB/s."
+        )
 
     if target == "gp3":
-        lines.append(
-            f"Demand with headroom: need_iops≈{fmt_num(need_iops)}, "
-            f"need_tp≈{fmt_num(need_tp, 1)} MiB/s."
-        )
         lines.append(
             f"Applicable included gp3 baseline for this engine/size: "
             f"{base_iops} IOPS / {base_tp} MiB/s."
@@ -410,18 +623,17 @@ def build_summary(ctx: dict[str, Any]) -> list[str]:
             )
         else:
             lines.append(
-                f"Provisioned above baseline: iops={ctx['rec_iops']}, "
+                f"Provisioned above gp3 baseline: iops={ctx['rec_iops']}, "
                 f"storage_throughput={ctx['rec_tp']} "
                 f"(extras billed above {base_iops} IOPS / {base_tp} MiB/s)."
             )
     else:
         lines.append(
-            f"Demand with headroom: need_iops≈{fmt_num(need_iops)} → "
-            f"recommended io2 iops={ctx['rec_iops']} "
+            f"Recommended io2 iops={ctx['rec_iops']} "
             f"(storage_throughput = null for io2)."
         )
 
-    lines.append(COST_RATES_NOTE)
+    lines.append(f"Cost rates: {ctx['rates_source']}")
     return lines
 
 
@@ -430,13 +642,14 @@ def emit_table(ctx: dict[str, Any]) -> None:
     notes = ctx["notes"]
     notes_block = ""
     if notes:
+        # Class baseline annotation is informational — keep under Notes as planned
         note_lines = "\n".join(f"  - {n}" for n in notes)
         notes_block = f"\nNotes:\n{note_lines}\n"
     tf = ctx["tf_block"]
     print(
         f"""=== RDS Storage Type Sizing ===
 Instance: {ctx['instance']} | Engine: {ctx['engine']} | Region: {ctx['region']}
-Direction: {ctx['storage_type']} → {ctx['target']}
+Direction: {ctx['storage_type']} → {ctx['target']} | size-from: {ctx['size_from']}
 
 Current ({ctx['storage_type']}):
   Storage: {ctx['allocated']} GiB | IOPS: {ctx['current_iops_disp']} | Throughput: {ctx['current_tp_disp']}
@@ -444,14 +657,17 @@ Current ({ctx['storage_type']}):
   Estimated monthly cost: ${ctx['current_cost']:.2f}
 
 Observed Metrics ({ctx['days']}-day lookback, period {ctx['period']}s):
-  p99 ReadIOPS:     {fmt_num(ctx['riops_p99'])}
-  p99 WriteIOPS:    {fmt_num(ctx['wiops_p99'])}
-  p99 TotalIOPS:    {fmt_num(ctx['tiops_p99'])}
-  p99 ReadLatency:  {fmt_num(ctx['rlat_p99_ms'], 2)} ms
-  p99 WriteLatency: {fmt_num(ctx['wlat_p99_ms'], 2)} ms
-  Avg DiskQueueDepth: {fmt_num(ctx['dq_avg'], 2)}
-  Peak Throughput:    {fmt_num(ctx['peak_tp_mib'], 1)} MiB/s
-  Avg CPUUtilization: {fmt_num(ctx['cpu_avg'], 1)}% (max {fmt_num(ctx['cpu_max'], 1)}%)
+  Maximum ReadIOPS:     {fmt_num(ctx['riops_max'])}
+  Maximum WriteIOPS:    {fmt_num(ctx['wiops_max'])}
+  Peak IOPS (maxR+maxW): {fmt_num(ctx['peak_iops_sum'])}
+  Maximum ReadThroughput:  {fmt_num(ctx['rtp_max_mib'], 1)} MiB/s
+  Maximum WriteThroughput: {fmt_num(ctx['wtp_max_mib'], 1)} MiB/s
+  Peak TP (maxR+maxW):     {fmt_num(ctx['peak_tp_sum_mib'], 1)} MiB/s
+  p99 avg TotalIOPS:    {fmt_num(ctx['tiops_p99'])}
+  p99 avg TotalTP:      {fmt_num(ctx['ttp_p99_mib'], 1)} MiB/s
+  p99 ReadLatency:      {fmt_num(ctx['rlat_p99_ms'], 2)} ms
+  p99 WriteLatency:     {fmt_num(ctx['wlat_p99_ms'], 2)} ms
+  Avg DiskQueueDepth:   {fmt_num(ctx['dq_avg'], 2)}
   Demand (headroom {ctx['headroom']}): need_iops={fmt_num(ctx['need_iops'])} need_tp={fmt_num(ctx['need_tp'], 1)} MiB/s
 
 Summary:
@@ -462,7 +678,7 @@ Recommended settings ({ctx['target']}):
 
 Estimated recommended monthly cost: ${ctx['rec_cost']:.2f}
 Cost delta (current − recommended): {ctx['cost_delta_pct']:.2f}% (${ctx['cost_delta']:.2f}/mo)
-  (positive = recommended is cheaper; {COST_RATES_NOTE})
+  (positive = recommended is cheaper)
 {notes_block}"""
     )
 
@@ -483,13 +699,14 @@ def emit_markdown(ctx: dict[str, Any]) -> None:
 | Engine | `{ctx['engine']}` |
 | Region | `{ctx['region']}` |
 | Direction | `{ctx['storage_type']}` → `{ctx['target']}` |
-| Current cost | ${ctx['current_cost']:.2f}/mo |
-| p99 TotalIOPS | {fmt_num(ctx['tiops_p99'])} |
+| size-from | `{ctx['size_from']}` |
+| Peak IOPS (maxR+maxW) | {fmt_num(ctx['peak_iops_sum'])} |
+| Peak TP (maxR+maxW) | {fmt_num(ctx['peak_tp_sum_mib'], 1)} MiB/s |
+| p99 avg TotalIOPS | {fmt_num(ctx['tiops_p99'])} |
 | Recommended IOPS | {ctx['rec_iops'] if ctx['rec_iops'] is not None else 'null (baseline)'} |
 | Recommended throughput | {ctx['rec_tp'] if ctx['rec_tp'] is not None else 'null (baseline)'} |
-| Baseline | {ctx['baseline_iops']} IOPS / {ctx['baseline_tp']} MiB/s |
+| Current cost | ${ctx['current_cost']:.2f}/mo |
 | Recommended cost | ${ctx['rec_cost']:.2f}/mo |
-| Cost delta | {ctx['cost_delta_pct']:.2f}% (${ctx['cost_delta']:.2f}/mo) |
 
 ## Summary
 
@@ -508,6 +725,7 @@ def emit_json(ctx: dict[str, Any]) -> None:
         "engine": ctx["engine"],
         "region": ctx["region"],
         "direction": {"from": ctx["storage_type"], "to": ctx["target"]},
+        "size_from": ctx["size_from"],
         "current": {
             "storage_type": ctx["storage_type"],
             "allocated_storage": ctx["allocated"],
@@ -518,18 +736,21 @@ def emit_json(ctx: dict[str, Any]) -> None:
             "dedicated_log_volume": ctx["dlv"],
             "monthly_cost": ctx["current_cost"],
         },
+        "instance_class_ebs": ctx.get("class_limits"),
         "metrics": {
             "lookback_days": ctx["days"],
             "period_seconds": ctx["period"],
-            "p99_read_iops": ctx["riops_p99"],
-            "p99_write_iops": ctx["wiops_p99"],
-            "p99_total_iops": ctx["tiops_p99"],
+            "max_read_iops": ctx["riops_max"],
+            "max_write_iops": ctx["wiops_max"],
+            "peak_iops_sum": ctx["peak_iops_sum"],
+            "max_read_throughput_mib_s": ctx["rtp_max_mib"],
+            "max_write_throughput_mib_s": ctx["wtp_max_mib"],
+            "peak_throughput_sum_mib_s": ctx["peak_tp_sum_mib"],
+            "p99_avg_total_iops": ctx["tiops_p99"],
+            "p99_avg_total_throughput_mib_s": ctx["ttp_p99_mib"],
             "p99_read_latency_ms": ctx["rlat_p99_ms"],
             "p99_write_latency_ms": ctx["wlat_p99_ms"],
             "avg_disk_queue_depth": ctx["dq_avg"],
-            "peak_throughput_mib_s": ctx["peak_tp_mib"],
-            "avg_cpu_utilization": ctx["cpu_avg"],
-            "max_cpu_utilization": ctx["cpu_max"],
             "empty_metrics": ctx["empty_metrics"],
         },
         "sizing": {
@@ -548,7 +769,7 @@ def emit_json(ctx: dict[str, Any]) -> None:
             "recommended_monthly": ctx["rec_cost"],
             "delta_monthly": ctx["cost_delta"],
             "delta_pct": ctx["cost_delta_pct"],
-            "rates_note": COST_RATES_NOTE,
+            "rates_source": ctx["rates_source"],
         },
         "summary": ctx["summary"],
         "notes": ctx["notes"],
@@ -610,7 +831,7 @@ def main(argv: list[str] | None = None) -> int:
     if storage_type in ("io1", "io2") and target != "gp3":
         die("From io1/io2, only --target gp3 is supported", 3)
 
-    log(f"Direction: {storage_type} → {target}")
+    log(f"Direction: {storage_type} → {target} | size-from: {args.size_from}")
     if status == "stopped":
         log("Warning: instance status is 'stopped' — metrics may be empty.")
 
@@ -624,20 +845,25 @@ def main(argv: list[str] | None = None) -> int:
         die(f"AWS error fetching metrics: {e}", 2)
 
     log("Metrics received; computing stats…")
+    log("Loading regional price list (best-effort)…")
+    rates = fetch_regional_rates(session, region)
 
     def st(name: str) -> dict[str, float | None]:
         return series_stats(series.get(name, []))
 
-    ri = st("readiops")
-    wi = st("writeiops")
-    ti = st("total_iops")
+    ri_avg = st("readiops_avg")
+    wi_avg = st("writeiops_avg")
+    ri_max = st("readiops_max")
+    wi_max = st("writeiops_max")
+    rtp_max = st("readthroughput_max")
+    wtp_max = st("writethroughput_max")
+    ti_avg = st("total_iops_avg")
+    tp_avg = st("total_tp_avg")
     rl = st("readlatency")
     wl = st("writelatency")
-    tp = st("total_tp")
     dq = st("diskqueuedepth")
-    cpu = st("cpuutilization")
 
-    empty_metrics = ti["p99"] is None
+    empty_metrics = (ri_max["max"] is None and wi_max["max"] is None and ti_avg["p99"] is None)
     if empty_metrics:
         log("Warning: no CloudWatch IOPS datapoints in the lookback window.")
 
@@ -649,17 +875,26 @@ def main(argv: list[str] | None = None) -> int:
 
     rlat_ms = sec_to_ms(rl["p99"])
     wlat_ms = sec_to_ms(wl["p99"])
-    ttp_p99_mib = bytes_to_mib(tp["p99"])
-    ttp_max_mib = bytes_to_mib(tp["max"])
-    peak_tp = ttp_max_mib if ttp_max_mib is not None else ttp_p99_mib
 
-    p99_iops = ti["p99"] or 0.0
-    p99_tp = ttp_p99_mib or 0.0
-    need_iops = p99_iops * args.headroom
-    need_tp = p99_tp * args.headroom
+    riops_max_v = ri_max["max"] or 0.0
+    wiops_max_v = wi_max["max"] or 0.0
+    peak_iops_sum = riops_max_v + wiops_max_v
+    rtp_max_mib = bytes_to_mib(rtp_max["max"]) or 0.0
+    wtp_max_mib = bytes_to_mib(wtp_max["max"]) or 0.0
+    peak_tp_sum_mib = rtp_max_mib + wtp_max_mib
+
+    ttp_p99_mib = bytes_to_mib(tp_avg["p99"]) or 0.0
+    p99_iops = ti_avg["p99"] or 0.0
+
+    if args.size_from == "maximum":
+        need_iops = peak_iops_sum * args.headroom
+        need_tp = peak_tp_sum_mib * args.headroom
+    else:
+        need_iops = p99_iops * args.headroom
+        need_tp = ttp_p99_mib * args.headroom
 
     log(
-        f"Sizing {target} from demand "
+        f"Sizing {target} from {args.size_from} "
         f"(need_iops≈{ceil_int(need_iops)}, need_tp≈{need_tp:.1f} MiB/s)…"
     )
 
@@ -674,30 +909,48 @@ def main(argv: list[str] | None = None) -> int:
     else:
         sizing = size_to_io2(engine=engine, allocated=allocated, need_iops=need_iops)
 
+    apply_instance_class_caps(
+        sizing,
+        instance_class=instance_class,
+        need_iops=need_iops,
+        need_tp=need_tp,
+        prov_iops=prov_iops,
+    )
+
     multi = 2 if multi_az else 1
 
-    # Current cost
     if storage_type == "gp3":
         cur_iops = prov_iops if prov_iops > 0 else sizing.bill_base_iops
         cur_tp = storage_tp if storage_tp > 0 else sizing.bill_base_tp
         current_cost = gp3_monthly_cost(
-            allocated, cur_iops, cur_tp, sizing.bill_base_iops, sizing.bill_base_tp, multi
+            allocated,
+            cur_iops,
+            cur_tp,
+            sizing.bill_base_iops,
+            sizing.bill_base_tp,
+            multi,
+            rates,
         )
     else:
-        current_cost = piops_monthly_cost(allocated, prov_iops, multi)
+        current_cost = piops_monthly_cost(allocated, prov_iops, multi, rates)
 
-    # Recommended cost
     if target == "gp3":
         bill_iops = sizing.gp3_iops_bill or sizing.bill_base_iops
         bill_tp = sizing.gp3_tp_bill or sizing.bill_base_tp
         if sizing.needs_growth and sizing.gp3_iops_bill is None:
             bill_iops, bill_tp = sizing.bill_base_iops, sizing.bill_base_tp
         rec_cost = gp3_monthly_cost(
-            allocated, bill_iops, bill_tp, sizing.bill_base_iops, sizing.bill_base_tp, multi
+            allocated,
+            bill_iops,
+            bill_tp,
+            sizing.bill_base_iops,
+            sizing.bill_base_tp,
+            multi,
+            rates,
         )
     else:
         bill_io2 = sizing.io2_iops or IO2_MIN_IOPS
-        rec_cost = piops_monthly_cost(allocated, bill_io2, multi)
+        rec_cost = piops_monthly_cost(allocated, bill_io2, multi, rates)
 
     cost_delta = current_cost - rec_cost
     cost_delta_pct = (cost_delta / current_cost * 100.0) if current_cost > 0 else 0.0
@@ -708,7 +961,7 @@ def main(argv: list[str] | None = None) -> int:
     if sizing.over_max:
         if target == "gp3":
             notes.append(
-                f"need_iops ({need_iops:.0f}) exceeds gp3 max ({sizing.gp3_max_iops}) — gp3 may not meet demand"
+                f"need_iops ({need_iops:.0f}) exceeds gp3 max ({sizing.gp3_max_iops})"
             )
         else:
             notes.append(
@@ -724,10 +977,10 @@ def main(argv: list[str] | None = None) -> int:
         if dq["avg"] > thresh:
             notes.append("DiskQueueDepth suggests I/O pressure — do not undersize the destination")
 
-    # Terraform / settings snippet (generic knob names)
     uses_baseline = target == "gp3" and sizing.rec_iops is None and not sizing.dlv_blocker
     baseline_iops = sizing.bill_base_iops
     baseline_tp = sizing.bill_base_tp
+    class_limits = lookup_instance_class(instance_class)
 
     if sizing.dlv_blocker:
         tf_block = "  # No gp3 recommendation while Dedicated Log Volume is enabled"
@@ -767,12 +1020,13 @@ def main(argv: list[str] | None = None) -> int:
         current_iops_disp = str(prov_iops)
         current_tp_disp = "n/a"
 
-    ctx = {
+    ctx: dict[str, Any] = {
         "instance": args.db_instance,
         "engine": engine,
         "region": region,
         "storage_type": storage_type,
         "target": target,
+        "size_from": args.size_from,
         "allocated": allocated,
         "prov_iops": prov_iops,
         "current_iops_disp": current_iops_disp,
@@ -780,6 +1034,7 @@ def main(argv: list[str] | None = None) -> int:
         "multi_az": multi_az,
         "multi_az_label": "Yes" if multi_az else "No",
         "instance_class": instance_class,
+        "class_limits": class_limits,
         "status": status,
         "dlv": dlv,
         "dlv_blocker": sizing.dlv_blocker,
@@ -788,15 +1043,17 @@ def main(argv: list[str] | None = None) -> int:
         "days": args.days,
         "period": period,
         "headroom": args.headroom,
-        "riops_p99": ri["p99"],
-        "wiops_p99": wi["p99"],
-        "tiops_p99": ti["p99"],
+        "riops_max": ri_max["max"],
+        "wiops_max": wi_max["max"],
+        "peak_iops_sum": peak_iops_sum,
+        "rtp_max_mib": rtp_max_mib,
+        "wtp_max_mib": wtp_max_mib,
+        "peak_tp_sum_mib": peak_tp_sum_mib,
+        "tiops_p99": ti_avg["p99"],
+        "ttp_p99_mib": ttp_p99_mib,
         "rlat_p99_ms": rlat_ms,
         "wlat_p99_ms": wlat_ms,
         "dq_avg": dq["avg"],
-        "peak_tp_mib": peak_tp,
-        "cpu_avg": cpu["avg"],
-        "cpu_max": cpu["max"],
         "need_iops": need_iops,
         "need_tp": need_tp,
         "empty_metrics": empty_metrics,
@@ -810,6 +1067,7 @@ def main(argv: list[str] | None = None) -> int:
         "rec_cost": rec_cost,
         "cost_delta": cost_delta,
         "cost_delta_pct": cost_delta_pct,
+        "rates_source": rates.source,
         "notes": notes,
         "tf_block": tf_block,
         "tf_hcl": tf_hcl,

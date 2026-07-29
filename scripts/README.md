@@ -11,57 +11,64 @@ changing storage type. Implemented as a [uv inline script](https://docs.astral.s
 | `io1` / `io2` | `gp3` | `storage_type`, `iops`, `storage_throughput` |
 | `gp3` | `io2` | `storage_type`, `iops` (`storage_throughput` = `null`) |
 
-Goal: recommend destination IOPS/throughput (or baseline) so the change does
-**not** undersize performance. Cost delta is informational (**us-east-1 reference
-rate constants** in the script — not the live AWS Price List API).
+### How sizing works (console / Q / Rovo aligned)
+
+By default (`--size-from maximum`):
+
+1. Fetch **Average** and **Maximum** for Read/Write IOPS and Read/Write Throughput.
+2. Peak demand = `max(Read)+max(Write)` for IOPS and throughput (MiB/s).
+3. `need_* = peak × headroom` (default 1.2).
+4. Apply **DB instance class EBS caps** (e.g. `db.m5.xlarge` baseline 6000 IOPS / max 18750).
+5. Map to gp3 or io2 rules (SQL Server gp3 is tunable at any size; baseline 3K/125).
+
+Use `--size-from p99-average` for the older p99-of-Averages approach (display still
+shows both Maximum peaks and p99 averages).
 
 ### What `null` means
 
 For **gp3**, `iops = null` and `storage_throughput = null` mean **use the included
-baseline** for that engine/size (e.g. 3,000/125 below stripe, or **12,000/500**
-when striped). The report **Summary** section always states the applicable
-baseline and whether demand fits under it. That is usually the correct cheap
-config when p99×headroom is below baseline — not a missing recommendation.
+baseline** for that engine/size. When Maximum-based demand exceeds baseline (common
+for SQL Server), the script recommends concrete values (e.g. `6000` / `500`).
 
-**Notes** only appear when there are warnings (DLV, empty metrics, over-max, etc.).
+**Notes** only appear for warnings (DLV, class clamp, empty metrics, etc.).
+
+### Cost
+
+Best-effort **AWS Price List Query API** rates for the instance region (IAM:
+`pricing:GetProducts`). Falls back to us-east-1 reference constants if unavailable.
 
 Full methodology:
 [docs/storage-performance-measurement.md](../docs/storage-performance-measurement.md)
 
 ### Prerequisites
 
-- [`uv`](https://docs.astral.sh/uv/) (`mise install` installs it via `mise.toml`)
-- AWS credentials (same chain as boto3 / AWS CLI)
-- IAM: `rds:DescribeDBInstances`, `cloudwatch:GetMetricData`
+- [`uv`](https://docs.astral.sh/uv/) (`mise install` via `mise.toml`)
+- AWS credentials (boto3 chain)
+- IAM: `rds:DescribeDBInstances`, `cloudwatch:GetMetricData`, optional `pricing:GetProducts`
 
 ### Usage
 
 ```bash
-./scripts/measure-rds-storage.py -i <id> [options]
-# or
-uv run scripts/measure-rds-storage.py -i <id> [options]
+./scripts/measure-rds-storage.py -i <id> -r <region> [options]
 ```
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--db-instance` | `-i` | required | RDS DB instance identifier |
-| `--region` | `-r` | `$AWS_REGION` → `$AWS_DEFAULT_REGION` → `us-east-1` | AWS region |
+| `--region` | `-r` | env / `us-east-1` | AWS region |
 | `--profile` | `-p` | — | AWS profile |
-| `--days` | `-d` | `14` | CloudWatch lookback (use `1` or `3` for smoke tests) |
+| `--days` | `-d` | `14` | CloudWatch lookback |
 | `--target` | `-t` | auto | `gp3` or `io2` |
+| `--size-from` | | `maximum` | `maximum` \| `p99-average` |
 | `--format` | `-f` | `table` | `table` \| `json` \| `markdown` |
 | `--headroom` | | `1.2` | Demand multiplier |
-
-Progress messages go to **stderr**; the report goes to **stdout**.
 
 ### Examples
 
 ```bash
-./scripts/measure-rds-storage.py -i my-db-prod -r eu-west-1
-
-./scripts/measure-rds-storage.py -i my-db-prod -r eu-west-1 -d 1
-
-./scripts/measure-rds-storage.py -i my-db-prod -t gp3 -f json
+./scripts/measure-rds-storage.py -i my-db -r eu-west-1 -d 14
+./scripts/measure-rds-storage.py -i my-db -r eu-west-1 -d 90 --size-from maximum
+./scripts/measure-rds-storage.py -i my-db -r eu-west-1 --size-from p99-average -f json
 ```
 
 ### Exit codes
@@ -69,15 +76,6 @@ Progress messages go to **stderr**; the report goes to **stdout**.
 | Code | Meaning |
 |------|---------|
 | 0 | OK |
-| 1 | Usage / argument error |
+| 1 | Usage error |
 | 2 | AWS error |
-| 3 | Unsupported storage type or invalid direction |
-
-### Notes
-
-- Read-only AWS APIs only.
-- “p99” is a percentile of CloudWatch **period averages**.
-- PIOPS destination is always **io2** (not io1).
-- First run downloads `boto3` into a uv-managed environment automatically.
-- Map `storage_type` / `iops` / `storage_throughput` to your root-module variable
-  names if they differ (e.g. `db_instance_*` in this repo).
+| 3 | Unsupported storage / invalid direction |

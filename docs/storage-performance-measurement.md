@@ -26,7 +26,7 @@ This does not replace general storage guidance — see
 |-------------|-------|
 | `uv` | Via `mise install` (`mise.toml`) or [astral.sh/uv](https://docs.astral.sh/uv/) |
 | AWS credentials | boto3 credential chain (env, profile, instance role, …) |
-| IAM | `rds:DescribeDBInstances`, `cloudwatch:GetMetricData` |
+| IAM | `rds:DescribeDBInstances`, `cloudwatch:GetMetricData`, optional `pricing:GetProducts` |
 
 > [!NOTE]
 > Cloud-agent / CI environments without real AWS credentials cannot run this
@@ -49,39 +49,39 @@ instance class, DLV. **DLV blocks gp3** (io1/io2 only).
 
 ## Step 2 — Collect CloudWatch Metrics
 
-| Metric | Namespace | Statistic | Period | Why |
-|--------|-----------|-----------|--------|-----|
-| `ReadIOPS` / `WriteIOPS` | AWS/RDS | Average → client p99 | 5 min (14d) / 1 min (≤3d) | Peak IOPS demand |
-| `ReadThroughput` / `WriteThroughput` | AWS/RDS | Average → p99/max | same | Throughput demand |
-| `ReadLatency` / `WriteLatency` | AWS/RDS | Average → p99 | same | App sensitivity (note only) |
-| `DiskQueueDepth` | AWS/RDS | Average | same | I/O pressure note |
-| `CPUUtilization` / `FreeableMemory` / `CPUCreditBalance` | AWS/RDS | Average/max | same | Context |
+Primary metrics (same as console / Amazon Q validation):
 
-### Retention / period rules
+| Metric | Stats collected | Why |
+|--------|-----------------|-----|
+| `ReadIOPS` / `WriteIOPS` | **Average** and **Maximum** | Peak + typical demand |
+| `ReadThroughput` / `WriteThroughput` | **Average** and **Maximum** | Peak + typical throughput |
+| Latency / queue / CPU | Average | Context / notes |
 
-- **14-day lookback:** period `300` (5 min)
-- **≤3-day lookback:** period `60` (1 min) — useful for smoke tests (`--days 1`)
-- Script “p99” = percentile of CloudWatch **period averages**, not raw samples
-
-Derive:
-
-- `TotalIOPS = ReadIOPS + WriteIOPS`
-- `TotalThroughput` bytes/s → MiB/s ÷ 1,048,576
+Default period: `300` (5 min) for lookbacks &gt; 3 days; `60` for ≤3 days.
 
 ## Step 3 — Interpret the Metrics
 
 | Signal | Interpretation |
 |--------|----------------|
-| `p99_total_iops / provisioned_iops < 0.5` (on PIOPS) | Over-provisioned vs ceiling — demand still drives destination size |
-| `DiskQueueDepth` high vs IOPS | Do not undersize destination |
-| p99 latency &lt; 1 ms | **Note only** — confirm hard sub-ms SLA with app owner |
+| High **Maximum** Read+Write IOPS | Drives default sizing (`--size-from maximum`) |
+| p99 of Averages ≪ Maximum | Spiky workload — Maximum-based sizing is safer for “no regression” |
+| Instance class EBS baseline/max | Caps what storage can deliver (e.g. db.m5.xlarge baseline 6000 IOPS) |
 | Empty / near-zero series | Stopped or idle — verify traffic before applying settings |
-| High CPU + low IOPS | Bottleneck may be compute, not storage type |
 
 ## Step 4 — Size the Destination
 
-`need_iops = p99_total_iops × headroom` (default 1.2)  
-`need_tp   = p99_total_tp   × headroom`
+**Default (`--size-from maximum`, aligns with console/Q/Rovo):**
+
+```
+peak_iops = max(ReadIOPS) + max(WriteIOPS)
+peak_tp   = (max(ReadThroughput) + max(WriteThroughput)) / 1,048,576   # MiB/s
+need_iops = peak_iops × headroom (default 1.2)
+need_tp   = peak_tp   × headroom
+```
+
+Then clamp to **DB instance class EBS max**, then apply gp3/io2 engine rules.
+
+Optional: `--size-from p99-average` uses p99 of Average totals instead (older behavior).
 
 ### Terraform knobs by type
 
@@ -97,14 +97,19 @@ Map these generic names to your module variables as needed (this repo uses
 ### What `null` means (gp3 baseline)
 
 For gp3, **`iops = null` and `storage_throughput = null` mean “use the included
-baseline”** — do not provision extras. That is correct when demand (with headroom)
-fits under the applicable baseline:
+baseline”**. When Maximum-based demand exceeds baseline, the script recommends
+**concrete** values (common for SQL Server, e.g. 6000 IOPS / 500 MiB/s).
 
-- Below stripe (or SQL Server): **3,000 IOPS / 125 MiB/s**
-- At/above stripe (MySQL/MariaDB/PostgreSQL/Db2/Oracle): **12,000 IOPS / 500 MiB/s**
+- SQL Server baseline: **3,000 IOPS / 125 MiB/s** (tunable at any size)
+- Non–SQL Server below stripe: **3,000 / 125** (baseline only)
+- Non–SQL Server at/above stripe: **12,000 / 500**
 
-The script’s **Summary** section always prints the applicable baseline and whether
-null means baseline. **Notes** are warnings only and are omitted when empty.
+### Instance class EBS caps
+
+RDS cannot deliver more than the instance class EBS limit. Example:
+`db.m5.xlarge` ≈ baseline **6000** IOPS / max **18750** IOPS, max throughput
+~**594** MiB/s. The script clamps recommendations and warns when demand exceeds
+the class.
 
 ### gp3 performance by engine / size
 
@@ -128,8 +133,11 @@ stripe and demand &gt; baseline → note: grow storage or keep PIOPS. Enforce
 
 ## Step 5 — Compare Costs (informational)
 
-Rates are region-parameterized. Script defaults are **us-east-1 reference
-constants** (informational — not the live AWS Price List API).
+The script calls the **AWS Price List Query API** (`pricing:GetProducts`) for the
+instance region when possible, and falls back to us-east-1 reference constants.
+IAM: `pricing:GetProducts`.
+
+Multi-AZ ×2 on storage + IOPS + throughput charges.
 
 | Type | Storage $/GB-mo | IOPS | Throughput |
 |------|-----------------|------|------------|
@@ -173,20 +181,20 @@ need_iops = 7200 × 1.2 = 8640  ≤ striped baseline 12K/500
 
 Cost (Multi-AZ ×2, **us-east-1 reference rates**): io2 ≈ $4,125/mo → gp3 baseline ≈ $115/mo (informational).
 
-### B — gp3 → io2
+### B — SQL Server io2 → gp3 (Maximum-based)
 
-**Current:** PostgreSQL, gp3 baseline, 500 GiB, Multi-AZ.  
-**Observed:** p99 TotalIOPS = 7,200.
+**Current:** SQL Server, io2, db.m5.xlarge, Multi-AZ.  
+**Observed Maximum:** peak Read+Write IOPS and throughput imply need ≈ 6000 IOPS /
+500 MiB/s after headroom (above gp3 baseline 3K/125; within class max).
 
 ```
-need_iops = 7200 × 1.2 = 8640 → round to 8700
-→ storage_type = "io2"
-→ iops = 8700
-→ storage_throughput = null
+→ storage_type       = "gp3"
+→ iops               = 6000
+→ storage_throughput = 500
 ```
 
-Cost rises vs gp3 baseline (informational us-east-1 reference rates); use when you
-need PIOPS/DLV or explicit provisioned IOPS.
+Instance class baseline (6000 IOPS on m5.xlarge) often aligns with this class of
+recommendation when sizing from Maximum peaks.
 
 ## Applying settings
 
@@ -239,7 +247,11 @@ Install via `mise install` (see `mise.toml`) or https://docs.astral.sh/uv/
 ## References
 
 - [Amazon RDS DB instance storage](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Storage.html)
+- [Hardware specifications for DB instance classes](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.Summary.html)
+- [Factors that affect DB instance performance (EBS)](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Storage.html#CHAP_Storage.Other.Factors)
 - [CloudWatch metrics for Amazon RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/monitoring-cloudwatch.html)
+- [AWS Price List Query API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-price-list-query-api.html)
+- [GetProducts API](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_pricing_GetProducts.html)
 - [AWS Pricing Calculator](https://calculator.aws/)
 - [Storage Guide (this repo)](./storage-guide.md)
 - [Script README](../scripts/README.md)
