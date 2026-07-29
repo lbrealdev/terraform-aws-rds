@@ -1,9 +1,10 @@
 # scripts
 
-## `measure-rds-storage.sh`
+## `measure-rds-storage.py`
 
 Size **equivalent RDS storage Terraform settings** from CloudWatch demand when
-changing storage type:
+changing storage type. Implemented as a [uv inline script](https://docs.astral.sh/uv/guides/scripts/#declaring-script-dependencies)
+(PEP 723) with `boto3`.
 
 | Current | Default target | Terraform knobs |
 |---------|----------------|-----------------|
@@ -11,49 +12,46 @@ changing storage type:
 | `gp3` | `io2` | `storage_type`, `iops` (`throughput` = `null`) |
 
 Goal: recommend destination IOPS/throughput (or baseline) so the change does
-**not** undersize performance. Cost delta is informational.
+**not** undersize performance. Cost delta is informational (us-east-1 reference
+rates in the script).
 
 Full methodology:
 [docs/storage-performance-measurement.md](../docs/storage-performance-measurement.md)
 
 ### Prerequisites
 
-- AWS CLI v2 (`aws --version`)
-- `jq`
+- [`uv`](https://docs.astral.sh/uv/) (`mise install` installs it via `mise.toml`)
+- AWS credentials (same chain as boto3 / AWS CLI)
 - IAM: `rds:DescribeDBInstances`, `cloudwatch:GetMetricData`
 
 ### Usage
 
 ```bash
-./scripts/measure-rds-storage.sh --db-instance <id> [options]
+./scripts/measure-rds-storage.py -i <id> [options]
+# or
+uv run scripts/measure-rds-storage.py -i <id> [options]
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--db-instance` | (required) | RDS DB instance identifier |
-| `--target` | auto | Destination: `gp3` or `io2` |
-| `--days` | `14` | CloudWatch lookback (use `1` or `3` for smoke tests) |
-| `--region` | `$AWS_REGION` → `$AWS_DEFAULT_REGION` → `us-east-1` | AWS region |
-| `--profile` | — | AWS CLI profile |
-| `--headroom` | `1.2` | Sizing multiplier on p99 demand |
-| `--rate-gp3-gb` / `--rate-gp3-iops` / `--rate-gp3-tp` | us-east-1 refs | Override gp3 rates |
-| `--rate-piops-gb` / `--rate-piops` | us-east-1 refs | Override io1/io2 rates |
-| `--format` | `table` | `table` \| `json` \| `markdown` |
-| `-h`, `--help` | — | Show help |
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--db-instance` | `-i` | required | RDS DB instance identifier |
+| `--region` | `-r` | `$AWS_REGION` → `$AWS_DEFAULT_REGION` → `us-east-1` | AWS region |
+| `--profile` | `-p` | — | AWS profile |
+| `--days` | `-d` | `14` | CloudWatch lookback (use `1` or `3` for smoke tests) |
+| `--target` | `-t` | auto | `gp3` or `io2` |
+| `--format` | `-f` | `table` | `table` \| `json` \| `markdown` |
+| `--headroom` | | `1.2` | Demand multiplier |
 
 Progress messages go to **stderr**; the report goes to **stdout**.
 
 ### Examples
 
 ```bash
-# Auto direction from current storage type (pass --region if not us-east-1)
-./scripts/measure-rds-storage.sh --db-instance my-db-prod --region eu-west-1
+./scripts/measure-rds-storage.py -i my-db-prod -r eu-west-1
 
-# Faster smoke test
-./scripts/measure-rds-storage.sh --db-instance my-db-prod --region eu-west-1 --days 1
+./scripts/measure-rds-storage.py -i my-db-prod -r eu-west-1 -d 1
 
-# Explicit target
-./scripts/measure-rds-storage.sh --db-instance my-db-prod --target gp3 --format json
+./scripts/measure-rds-storage.py -i my-db-prod -t gp3 -f json
 ```
 
 ### Exit codes
@@ -62,12 +60,12 @@ Progress messages go to **stderr**; the report goes to **stdout**.
 |------|---------|
 | 0 | OK |
 | 1 | Usage / argument error |
-| 2 | AWS / dependency error |
+| 2 | AWS error |
 | 3 | Unsupported storage type or invalid direction |
 
 ### Notes
 
-- Read-only: only `DescribeDBInstances` and `GetMetricData`.
-- “p99” is a percentile of CloudWatch **period averages**, not raw-sample p99.
-- Sub-ms latency is a **note** only — confirm any hard SLA with the app owner.
+- Read-only AWS APIs only.
+- “p99” is a percentile of CloudWatch **period averages**.
 - PIOPS destination is always **io2** (not io1).
+- First run downloads `boto3` into a uv-managed environment automatically.

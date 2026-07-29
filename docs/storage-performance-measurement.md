@@ -14,8 +14,8 @@ Cost impact is informational.
 **Goal:** use CloudWatch **demand** (not the provisioned ceiling alone) to
 recommend destination settings, then compare estimated monthly cost.
 
-**Automation:** [`scripts/measure-rds-storage.sh`](../scripts/measure-rds-storage.sh)
-(see also [`scripts/README.md`](../scripts/README.md)).
+**Automation:** [`scripts/measure-rds-storage.py`](../scripts/measure-rds-storage.py)
+(uv + boto3; see [`scripts/README.md`](../scripts/README.md)).
 
 This does not replace general storage guidance — see
 [storage-guide.md](./storage-guide.md).
@@ -24,14 +24,14 @@ This does not replace general storage guidance — see
 
 | Requirement | Notes |
 |-------------|-------|
-| AWS CLI v2 | `aws --version` |
-| `jq` | JSON parsing for describe + metric series |
+| `uv` | Via `mise install` (`mise.toml`) or [astral.sh/uv](https://docs.astral.sh/uv/) |
+| AWS credentials | boto3 credential chain (env, profile, instance role, …) |
 | IAM | `rds:DescribeDBInstances`, `cloudwatch:GetMetricData` |
 
 > [!NOTE]
 > Cloud-agent / CI environments without real AWS credentials cannot run this
 > loop. Per [`AGENTS.md`](../AGENTS.md), only the offline Terraform loop is
-> available there. Pass `--region` (or set `AWS_REGION` /
+> available there. Pass `-r` / `--region` (or set `AWS_REGION` /
 > `AWS_DEFAULT_REGION`) to match the instance’s region.
 
 ## Step 1 — Capture Current Configuration
@@ -204,18 +204,21 @@ Re-check ≥ **7 days**:
 ## FAQ
 
 **Wrong region / DBInstanceNotFound**  
-Pass `--region` (script prefers `AWS_REGION`, then `AWS_DEFAULT_REGION`, else
+Pass `-r` / `--region` (script prefers `AWS_REGION`, then `AWS_DEFAULT_REGION`, else
 `us-east-1`).
 
-**Script seems hung**  
-Progress is on stderr. CloudWatch over many days can take minutes; try
-`--days 1` for a smoke test.
+**Slow runs**  
+Progress is on stderr. Metrics fetch depends on AWS; local stats should be near-instant.
+Use `-d 1` for a smoke test.
 
 **Exit code 3**  
 Unsupported type (not io1/io2/gp3) or invalid `--target` for current type.
 
 **Why not recommend io1?**  
 This methodology uses **io2** as the PIOPS destination family.
+
+**Requires uv**  
+Install via `mise install` (see `mise.toml`) or https://docs.astral.sh/uv/
 
 ## References
 

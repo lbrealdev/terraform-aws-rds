@@ -5,7 +5,7 @@ This guide covers RDS storage types, migration strategies, performance considera
 For sizing **equivalent** storage Terraform settings when changing type
 (**io1/io2 ↔ gp3**) from CloudWatch demand, see
 [storage-performance-measurement.md](./storage-performance-measurement.md) and
-[`scripts/measure-rds-storage.sh`](../scripts/measure-rds-storage.sh)
+[`scripts/measure-rds-storage.py`](../scripts/measure-rds-storage.py)
 ([usage](../scripts/README.md)).
 
 ## Overview
