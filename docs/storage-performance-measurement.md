@@ -253,6 +253,7 @@ Install via `mise install` (see `mise.toml`) or https://docs.astral.sh/uv/
 - [CloudWatch metrics for Amazon RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/monitoring-cloudwatch.html)
 - [AWS Price List Query API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-price-list-query-api.html)
 - [GetProducts API](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_pricing_GetProducts.html)
+- [boto3 Pricing.get_products](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/pricing/client/get_products.html)
 - [AWS Pricing Calculator](https://calculator.aws/)
 - [Storage Guide (this repo)](./storage-guide.md)
 - [Script README](../scripts/README.md)
