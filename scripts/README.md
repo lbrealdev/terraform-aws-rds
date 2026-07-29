@@ -2,9 +2,16 @@
 
 ## `measure-rds-storage.sh`
 
-Assess whether an existing RDS instance on **io1/io2** is a good candidate for
-**gp3** migration. Collects CloudWatch demand, sizes a gp3 equivalent, estimates
-monthly cost, and prints a verdict plus a Terraform snippet.
+Size **equivalent RDS storage Terraform settings** from CloudWatch demand when
+changing storage type:
+
+| Current | Default target | Terraform knobs |
+|---------|----------------|-----------------|
+| `io1` / `io2` | `gp3` | `storage_type`, `iops`, `storage_throughput` |
+| `gp3` | `io2` | `storage_type`, `iops` (`throughput` = `null`) |
+
+Goal: recommend destination IOPS/throughput (or baseline) so the change does
+**not** undersize performance. Cost delta is informational.
 
 Full methodology:
 [docs/storage-performance-measurement.md](../docs/storage-performance-measurement.md)
@@ -24,27 +31,29 @@ Full methodology:
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--db-instance` | (required) | RDS DB instance identifier |
-| `--days` | `14` | CloudWatch lookback days |
-| `--region` | `$AWS_DEFAULT_REGION` or `us-east-1` | AWS region |
+| `--target` | auto | Destination: `gp3` or `io2` |
+| `--days` | `14` | CloudWatch lookback (use `1` or `3` for smoke tests) |
+| `--region` | `$AWS_REGION` → `$AWS_DEFAULT_REGION` → `us-east-1` | AWS region |
 | `--profile` | — | AWS CLI profile |
 | `--headroom` | `1.2` | Sizing multiplier on p99 demand |
-| `--rate-gp3-gb` | `0.115` | gp3 storage $/GB-mo |
-| `--rate-gp3-iops` | `0.02` | gp3 IOPS $ above baseline |
-| `--rate-gp3-tp` | `0.08` | gp3 throughput $/MiB/s above baseline |
-| `--rate-piops-gb` | `0.125` | io1/io2 storage $/GB-mo |
-| `--rate-piops` | `0.10` | io1/io2 provisioned IOPS $ |
+| `--rate-gp3-gb` / `--rate-gp3-iops` / `--rate-gp3-tp` | us-east-1 refs | Override gp3 rates |
+| `--rate-piops-gb` / `--rate-piops` | us-east-1 refs | Override io1/io2 rates |
 | `--format` | `table` | `table` \| `json` \| `markdown` |
 | `-h`, `--help` | — | Show help |
+
+Progress messages go to **stderr**; the report goes to **stdout**.
 
 ### Examples
 
 ```bash
-./scripts/measure-rds-storage.sh --db-instance my-db-prod
+# Auto direction from current storage type (pass --region if not us-east-1)
+./scripts/measure-rds-storage.sh --db-instance my-db-prod --region eu-west-1
 
-./scripts/measure-rds-storage.sh --db-instance my-db-prod --days 3 --format json
+# Faster smoke test
+./scripts/measure-rds-storage.sh --db-instance my-db-prod --region eu-west-1 --days 1
 
-./scripts/measure-rds-storage.sh --db-instance my-db-prod \
-  --region eu-west-1 --profile prod
+# Explicit target
+./scripts/measure-rds-storage.sh --db-instance my-db-prod --target gp3 --format json
 ```
 
 ### Exit codes
@@ -54,14 +63,11 @@ Full methodology:
 | 0 | OK |
 | 1 | Usage / argument error |
 | 2 | AWS / dependency error |
-| 3 | Unsupported storage type (not io1/io2) |
+| 3 | Unsupported storage type or invalid direction |
 
 ### Notes
 
-- Only supports instances currently on `io1` or `io2`.
-- Reported “p99” values are percentiles of CloudWatch **period averages** (5 min
-  or 1 min), not raw-sample p99.
-- Sub-ms latency is a **warning** only — confirm any hard SLA with the app owner
-  before staying on PIOPS.
-- Cloud-agent / CI environments without AWS credentials cannot run this script;
-  use a workstation or pipeline with access to the target account and region.
+- Read-only: only `DescribeDBInstances` and `GetMetricData`.
+- “p99” is a percentile of CloudWatch **period averages**, not raw-sample p99.
+- Sub-ms latency is a **note** only — confirm any hard SLA with the app owner.
+- PIOPS destination is always **io2** (not io1).

@@ -2,7 +2,11 @@
 
 This guide covers RDS storage types, migration strategies, performance considerations, and cost optimization.
 
-For assessing whether an existing **io1/io2** instance should move to **gp3** (CloudWatch demand, sizing, cost, verdict), see [storage-performance-measurement.md](./storage-performance-measurement.md) and [`scripts/measure-rds-storage.sh`](../scripts/measure-rds-storage.sh).
+For sizing **equivalent** storage Terraform settings when changing type
+(**io1/io2 ↔ gp3**) from CloudWatch demand, see
+[storage-performance-measurement.md](./storage-performance-measurement.md) and
+[`scripts/measure-rds-storage.sh`](../scripts/measure-rds-storage.sh)
+([usage](../scripts/README.md)).
 
 ## Overview
 
