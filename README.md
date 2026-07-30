@@ -138,6 +138,7 @@ The stack is distributed across four core modules:
 ## Detailed Documentation
 
 - **[Storage Guide](./docs/storage-guide.md)**: RDS storage types, GP2→GP3 migration, performance tuning, and cost optimization
+- **[Storage Performance Measurement](./docs/storage-performance-measurement.md)**: size equivalent io1/io2↔gp3 Terraform storage settings from CloudWatch demand ([`scripts/measure-rds-storage.py`](./scripts/measure-rds-storage.py), [usage](./scripts/README.md))
 - **[Rollback Strategy](./docs/rollbacks-snapshot-strategy.md)**: Snapshot-based rollback procedures, best practices, and decision criteria for production.
 - **[RDS Parameter & Option Reference](./docs/rds-options-reference.md)**: Comprehensive table of supported engines, parameter group families, and optional configuration blocks.
 

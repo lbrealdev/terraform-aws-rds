@@ -2,6 +2,12 @@
 
 This guide covers RDS storage types, migration strategies, performance considerations, and cost optimization.
 
+For sizing **equivalent** storage Terraform settings when changing type
+(**io1/io2 ↔ gp3**) from CloudWatch demand, see
+[storage-performance-measurement.md](./storage-performance-measurement.md) and
+[`scripts/measure-rds-storage.py`](../scripts/measure-rds-storage.py)
+([usage](../scripts/README.md)).
+
 ## Overview
 
 AWS RDS supports multiple storage types with different performance characteristics and pricing models:
